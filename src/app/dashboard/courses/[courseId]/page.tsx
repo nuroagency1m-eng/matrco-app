@@ -37,7 +37,7 @@ interface Course {
 
 function getVimeoEmbedUrl(url: string): string {
   const match = url.match(/vimeo\.com\/(\d+)/)
-  if (match) return `https://player.vimeo.com/video/${match[1]}?badge=0&autopause=0&player_id=0&app_id=58479&dnt=1`
+  if (match) return `https://player.vimeo.com/video/${match[1]}?badge=0&autopause=0&player_id=0&app_id=58479`
   return url
 }
 

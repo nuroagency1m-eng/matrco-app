@@ -24,12 +24,12 @@ const IMAGES = [
 ]
 
 const SERVICES = [
-  { href: '/dashboard/services/ads',           icon: 'fa-solid fa-bullhorn',     label: 'Ads',            desc: 'Crea y gestiona campañas publicitarias en Meta, Google y TikTok.',  color: '#D203DD' },
-  { href: '/dashboard/services/whatsapp',      icon: 'fa-brands fa-whatsapp',    label: 'Agentes de AI',  desc: 'Bots inteligentes que atienden y venden por WhatsApp 24/7.',          color: '#22c55e' },
-  { href: '/dashboard/services/social',        icon: 'fa-solid fa-share-nodes',  label: 'Social',         desc: 'Programa y publica contenido en tus redes sociales.',                color: '#e855f0' },
-  { href: '/dashboard/services/landing-pages', icon: 'fa-solid fa-file',         label: 'Landing Pages',  desc: 'Diseña páginas de aterrizaje para captar clientes.',                 color: '#a855f7' },
-  { href: '/dashboard/services/virtual-store', icon: 'fa-solid fa-shop',         label: 'Tienda Virtual', desc: 'Crea tu propia tienda online y vende tus productos.',                color: '#38bdf8' },
-  { href: '/dashboard/services/clipping',      icon: 'fa-solid fa-newspaper',    label: 'Clipping',       desc: 'Gana dinero creando contenido en TikTok, YouTube y Facebook.',       color: '#f472b6' },
+  { href: '/dashboard/services/ads',           icon: 'fa-solid fa-bullhorn',     label: 'Ads',            desc: 'Campañas en Meta, Google y TikTok.',        from: '#D203DD', to: '#0066FF' },
+  { href: '/dashboard/services/whatsapp',      icon: 'fa-brands fa-whatsapp',    label: 'Agentes de AI',  desc: 'Bots que atienden y venden 24/7.',           from: '#00FF88', to: '#00C2FF' },
+  { href: '/dashboard/services/social',        icon: 'fa-solid fa-share-nodes',  label: 'Social',         desc: 'Publica en todas tus redes desde aquí.',    from: '#FF2DF7', to: '#FF8800' },
+  { href: '/dashboard/services/landing-pages', icon: 'fa-solid fa-file',         label: 'Landing Pages',  desc: 'Páginas de venta generadas con IA.',        from: '#9B00FF', to: '#FF2DF7' },
+  { href: '/dashboard/services/virtual-store', icon: 'fa-solid fa-shop',         label: 'Tienda Virtual', desc: 'Tu tienda online sin comisiones.',           from: '#38bdf8', to: '#0066FF' },
+  { href: '/dashboard/services/clipping',      icon: 'fa-solid fa-newspaper',    label: 'Clipping',       desc: 'Gana por vistas en TikTok y YouTube.',      from: '#FF2D55', to: '#FF6B00' },
 ]
 
 export default function DashboardPage() {
@@ -172,12 +172,33 @@ export default function DashboardPage() {
           <p className="section-label"><i className="fa-solid fa-th-large"></i>Servicios</p>
           <div className="grid-2">
             {SERVICES.map(s => (
-              <Link key={s.href} href={s.href} className="d-card-comp metric" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                <div className="icon-chip" style={{ background: `${s.color}18`, color: s.color, width: 38, height: 38 }}>
-                  <i className={s.icon}></i>
+              <Link key={s.href} href={s.href} style={{ textDecoration: 'none', display: 'block' }}>
+                <div className="group" style={{
+                  position: 'relative', borderRadius: 18, overflow: 'hidden', padding: '14px 14px 12px',
+                  background: 'linear-gradient(145deg, #0D1E79 0%, #12004A 100%)',
+                  border: `1px solid ${s.from}30`,
+                  display: 'flex', flexDirection: 'column', gap: 8,
+                  transition: 'transform 0.2s, border-color 0.2s',
+                }}>
+                  {/* neon top bar */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${s.from}, ${s.to}, transparent)` }} />
+                  {/* icon */}
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: `linear-gradient(135deg, ${s.from}22, ${s.to}12)`,
+                    border: `1px solid ${s.from}35`,
+                    boxShadow: `0 0 12px ${s.from}18`,
+                    fontSize: 15, color: s.from,
+                  }}>
+                    <i className={s.icon} />
+                  </div>
+                  <p style={{ fontSize: 12, fontWeight: 800, color: '#fff', margin: 0, lineHeight: 1.2 }}>{s.label}</p>
+                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.4 }}>{s.desc}</p>
+                  {/* bottom arrow */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 2 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: s.from, opacity: 0.7 }}>Abrir →</span>
+                  </div>
                 </div>
-                <p className="metric__label" style={{ marginTop: 4 }}>{s.label}</p>
-                <p style={{ fontSize: '.7rem', color: 'var(--clr-muted)', margin: 0 }}>{s.desc}</p>
               </Link>
             ))}
           </div>
@@ -195,7 +216,7 @@ export default function DashboardPage() {
             {IMAGES.map((img, i) => (
               <div key={i} style={{ position: 'absolute', inset: 0, backgroundImage: `url('${img}')`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: imgIdx === i ? 1 : 0, transition: 'opacity 1.3s ease' }} />
             ))}
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(7,16,46,0.88) 0%, rgba(7,16,46,0.25) 100%)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,0,48,0.88) 0%, rgba(13,30,121,0.25) 100%)' }} />
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', gap: '20px', padding: '0 28px' }}>
               <div className="avatar-wrap" style={{ marginTop: 0 }}>
                 <div className="avatar-ring" />
@@ -271,16 +292,64 @@ export default function DashboardPage() {
           {/* Services Grid — desktop */}
           <section>
             <p className="section-label" style={{ marginBottom: 'var(--sp-4)' }}><i className="fa-solid fa-th-large"></i>Servicios</p>
-            <div className="d-grid d-grid-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
               {SERVICES.map(s => (
-                <Link key={s.href} href={s.href} className="d-card-comp d-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-                  <div className="d-card__top">
-                    <div className="icon-chip" style={{ background: `${s.color}18`, color: s.color, width: 42, height: 42, fontSize: '1.1rem' }}>
-                      <i className={s.icon}></i>
+                <Link key={s.href} href={s.href} style={{ textDecoration: 'none', display: 'block' }}>
+                  <div style={{
+                    position: 'relative', borderRadius: 20, overflow: 'hidden', padding: '20px 18px 16px',
+                    background: 'linear-gradient(145deg, #0D1E79 0%, #12004A 100%)',
+                    border: `1px solid ${s.from}30`,
+                    display: 'flex', flexDirection: 'column', gap: 10,
+                    transition: 'transform 0.25s, border-color 0.25s, box-shadow 0.25s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.transform = 'translateY(-4px)'
+                    el.style.borderColor = `${s.from}55`
+                    el.style.boxShadow = `0 16px 40px rgba(0,0,0,0.4), 0 0 30px ${s.from}18`
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement
+                    el.style.transform = 'translateY(0)'
+                    el.style.borderColor = `${s.from}30`
+                    el.style.boxShadow = 'none'
+                  }}>
+                    {/* neon top bar */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${s.from}, ${s.to}, transparent)` }} />
+                    {/* background number watermark */}
+                    <div style={{ position: 'absolute', bottom: -8, right: 6, fontSize: 72, fontWeight: 900, color: s.from + '07', lineHeight: 1, pointerEvents: 'none', userSelect: 'none' }}>
+                      {SERVICES.indexOf(s) + 1}
+                    </div>
+                    {/* icon */}
+                    <div style={{ position: 'relative', width: 46, height: 46 }}>
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: `linear-gradient(135deg, ${s.from}22, ${s.to}12)`,
+                        border: `1.5px solid ${s.from}40`,
+                        boxShadow: `0 0 18px ${s.from}20`,
+                        fontSize: 18, color: s.from,
+                      }}>
+                        <i className={s.icon} />
+                      </div>
+                      <span style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: s.from, border: '2px solid #0D1E79', boxShadow: `0 0 6px ${s.from}` }} />
+                    </div>
+                    {/* text */}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 14, fontWeight: 800, color: '#fff', margin: '0 0 4px', letterSpacing: '0.01em' }}>{s.label}</p>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.38)', margin: 0, lineHeight: 1.5 }}>{s.desc}</p>
+                    </div>
+                    {/* CTA */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      padding: '8px 0', borderRadius: 12, marginTop: 4,
+                      background: `linear-gradient(135deg, ${s.from}, ${s.to})`,
+                      fontSize: 11, fontWeight: 800, color: '#fff',
+                      boxShadow: `0 4px 16px ${s.from}30`,
+                    }}>
+                      Abrir <i className="fa-solid fa-arrow-right" style={{ fontSize: 9 }} />
                     </div>
                   </div>
-                  <p style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: '8px 0 4px' }}>{s.label}</p>
-                  <p style={{ fontSize: '.78rem', color: 'var(--clr-muted)', margin: 0 }}>{s.desc}</p>
                 </Link>
               ))}
             </div>

@@ -87,22 +87,22 @@ export default function CourseDetailPage() {
     }
   }
 
-  async function loadCourse() {
-    setLoading(true)
+  async function loadCourse(silent = false) {
+    if (!silent) setLoading(true)
     const res = await fetch(`/api/courses/${courseId}`)
     const data = await res.json()
-    if (!res.ok) { setError(data.error ?? 'Error'); setLoading(false); return }
+    if (!res.ok) { setError(data.error ?? 'Error'); if (!silent) setLoading(false); return }
     setCourse(data.course)
     const serverCompleted = new Set<string>(
       (data.course.videos as CourseVideo[]).filter(v => v.completed).map(v => v.id)
     )
     setCompletedVideos(serverCompleted)
-    // Auto-select first unlocked video
-    if (!selectedVideoId) {
+    // Auto-select first unlocked video (only on initial load)
+    if (!silent) {
       const firstUnlocked = (data.course.videos as CourseVideo[]).find(v => v.unlocked)
       if (firstUnlocked) setSelectedVideoId(firstUnlocked.id)
     }
-    setLoading(false)
+    if (!silent) setLoading(false)
   }
 
   useEffect(() => { loadCourse() }, [courseId])
@@ -175,7 +175,8 @@ export default function CourseDetailPage() {
       })
       if (res.ok) {
         setCompletedVideos(prev => new Set(prev).add(videoId))
-        await loadCourse()
+        // Silent refresh: update playlist without unmounting the video player
+        await loadCourse(true)
       }
     } catch {}
   }

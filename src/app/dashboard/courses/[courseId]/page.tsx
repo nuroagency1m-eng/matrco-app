@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { PaymentGateway } from '@/components/PaymentGateway'
 
@@ -10,6 +10,9 @@ interface CourseVideo {
   title: string
   youtubeUrl: string
   order: number
+  unlocked: boolean
+  percent: number
+  completed: boolean
 }
 
 interface Enrollment {
@@ -49,24 +52,11 @@ export default function CourseDetailPage() {
     fetch('/api/settings').then(r => r.json()).then(d => setPaymentQrUrl(d.settings?.PAYMENT_QR_URL || null)).catch(() => {})
   }, [])
 
-  const [isMobile, setIsMobile] = useState(false)
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768)
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  const [playingVideos, setPlayingVideos] = useState<Set<string>>(new Set())
+  // Vimeo player refs and tracking
   const iframeRefs = useRef<Record<string, HTMLIFrameElement | null>>({})
-
-  function handlePlay(videoId: string) {
-    const iframe = iframeRefs.current[videoId]
-    if (iframe?.contentWindow) {
-      iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*')
-    }
-    setPlayingVideos(prev => new Set(prev).add(videoId))
-  }
+  const vimeoPlayers = useRef<Record<string, any>>({})
+  const reportedRef = useRef<Set<string>>(new Set())
+  const [completedVideos, setCompletedVideos] = useState<Set<string>>(new Set())
 
   // Payment modal state
   const [showModal, setShowModal] = useState(false)
@@ -102,6 +92,11 @@ export default function CourseDetailPage() {
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? 'Error'); setLoading(false); return }
     setCourse(data.course)
+    // Sync completed state from server
+    const serverCompleted = new Set<string>(
+      (data.course.videos as CourseVideo[]).filter(v => v.completed).map(v => v.id)
+    )
+    setCompletedVideos(serverCompleted)
     setLoading(false)
   }
 
@@ -120,6 +115,67 @@ export default function CourseDetailPage() {
       document.removeEventListener('keydown', blockKeys)
     }
   }, [])
+
+  // Load Vimeo SDK and init players when course is approved and loaded
+  useEffect(() => {
+    if (!course || course.enrollment?.status !== 'APPROVED') return
+    if (course.videos.length === 0) return
+
+    function initPlayers() {
+      const Vimeo = (window as any).Vimeo
+      if (!Vimeo) return
+
+      for (const video of course!.videos) {
+        if (!video.unlocked) continue
+        const iframe = iframeRefs.current[video.id]
+        if (!iframe || vimeoPlayers.current[video.id]) continue
+
+        const player = new Vimeo.Player(iframe)
+        vimeoPlayers.current[video.id] = player
+
+        const vid = video // capture for closure
+        player.on('timeupdate', (data: { percent: number }) => {
+          const pct = Math.round(data.percent * 100)
+          if (pct >= 95 && !reportedRef.current.has(vid.id)) {
+            reportedRef.current.add(vid.id)
+            reportProgress(vid.id, pct)
+          }
+        })
+      }
+    }
+
+    if ((window as any).Vimeo) {
+      initPlayers()
+    } else {
+      // Check if script already added
+      if (!document.querySelector('script[data-vimeo-sdk]')) {
+        const script = document.createElement('script')
+        script.src = 'https://player.vimeo.com/api/player.js'
+        script.setAttribute('data-vimeo-sdk', '1')
+        script.onload = initPlayers
+        document.head.appendChild(script)
+      } else {
+        // Script loading, retry after a moment
+        const timer = setTimeout(initPlayers, 1500)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [course])
+
+  async function reportProgress(videoId: string, percent: number) {
+    try {
+      const res = await fetch(`/api/courses/${courseId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId, percent }),
+      })
+      if (res.ok) {
+        setCompletedVideos(prev => new Set(prev).add(videoId))
+        // Reload to unlock next video
+        await loadCourse()
+      }
+    } catch {}
+  }
 
   // Manual enroll submit
   async function handleManualEnroll() {
@@ -176,7 +232,7 @@ export default function CourseDetailPage() {
   if (loading) {
     return (
       <div className="px-4 sm:px-6 pt-6 max-w-screen-2xl mx-auto min-h-[60vh] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#D203DD', borderTopColor: 'transparent' }} />
       </div>
     )
   }
@@ -297,42 +353,58 @@ export default function CourseDetailPage() {
             Contenido del curso
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {course.videos.map((video, idx) => (
-              <div key={video.id} style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
-                    <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: 6 }}>{idx + 1}.</span>
-                    {video.title}
-                  </p>
-                </div>
-                <div style={{ position: 'relative', paddingBottom: '56.25%', background: '#000' }}>
-                  <iframe
-                    ref={el => { iframeRefs.current[video.id] = el }}
-                    src={getVimeoEmbedUrl(video.youtubeUrl)}
-                    title={video.title}
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                  />
-                  {!playingVideos.has(video.id) ? (
-                    <div
-                      onContextMenu={e => e.preventDefault()}
-                      style={{ position: 'absolute', inset: 0, zIndex: 2, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                      onClick={() => handlePlay(video.id)}
-                    >
-                      <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(245,166,35,0.15)', border: '2px solid rgba(245,166,35,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="#F5A623"><path d="M8 5v14l11-7z" /></svg>
-                      </div>
+            {course.videos.map((video, idx) => {
+              const isUnlocked = video.unlocked
+              const isDone = completedVideos.has(video.id) || video.completed
+
+              return (
+                <div key={video.id} style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${isUnlocked ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)'}`, opacity: isUnlocked ? 1 : 0.6 }}>
+                  {/* Video header */}
+                  <div style={{ background: isUnlocked ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.2)', padding: '10px 14px', borderBottom: `1px solid ${isUnlocked ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.02)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: isUnlocked ? '#fff' : 'rgba(255,255,255,0.4)', margin: 0 }}>
+                      <span style={{ color: 'rgba(255,255,255,0.3)', marginRight: 6 }}>{idx + 1}.</span>
+                      {video.title}
+                    </p>
+                    {isDone && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#00FF88', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.2)', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap', marginLeft: 8 }}>
+                        ✓ Completado
+                      </span>
+                    )}
+                    {!isUnlocked && !isDone && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', marginLeft: 8 }}>
+                        🔒 Bloqueado
+                      </span>
+                    )}
+                  </div>
+
+                  {isUnlocked ? (
+                    /* Unlocked: show Vimeo player */
+                    <div style={{ position: 'relative', paddingBottom: '56.25%', background: '#000' }}>
+                      <iframe
+                        ref={el => { iframeRefs.current[video.id] = el }}
+                        src={getVimeoEmbedUrl(video.youtubeUrl)}
+                        title={video.title}
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                      />
                     </div>
                   ) : (
-                    <>
-                      <div onContextMenu={e => e.preventDefault()} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: isMobile ? '75%' : '85%', zIndex: 1, background: 'transparent' }} />
-                      <div onContextMenu={e => e.preventDefault()} style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: isMobile ? '5%' : '8%', zIndex: 1, background: 'transparent' }} />
-                    </>
+                    /* Locked: placeholder with message */
+                    <div style={{ position: 'relative', paddingBottom: '56.25%', background: 'rgba(0,0,0,0.4)' }}>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 32 }}>🔒</span>
+                        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', textAlign: 'center', margin: 0, padding: '0 20px', lineHeight: 1.5 }}>
+                          {idx === 0
+                            ? 'Este video está bloqueado'
+                            : `Completa el video ${idx} al 95% para desbloquear`}
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

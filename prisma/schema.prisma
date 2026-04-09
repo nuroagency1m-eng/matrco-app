@@ -45,6 +45,7 @@ model User {
   clippingSubmissions  ClippingSubmission[]
   clippingPayouts      ClippingPayout[]
   courseEnrollments    CourseEnrollment[]
+  videoProgress        VideoProgress[]
   marketplaceCourses   MarketplaceCourse[]   @relation("MarketplaceSeller")
   marketplacePurchases MarketplacePurchase[] @relation("MarketplaceBuyer")
   storeOrders          StoreOrder[]
@@ -870,15 +871,33 @@ model Course {
 }
 
 model CourseVideo {
-  id         String   @id @default(uuid()) @db.Uuid
-  courseId   String   @map("course_id") @db.Uuid
+  id         String          @id @default(uuid()) @db.Uuid
+  courseId   String          @map("course_id") @db.Uuid
   title      String
-  youtubeUrl String   @map("youtube_url")
-  order      Int      @default(0)
-  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  youtubeUrl String          @map("youtube_url")
+  order      Int             @default(0)
+  course     Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress   VideoProgress[]
 
   @@index([courseId, order])
   @@map("course_videos")
+}
+
+model VideoProgress {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String      @map("user_id") @db.Uuid
+  videoId   String      @map("video_id") @db.Uuid
+  courseId  String      @map("course_id") @db.Uuid
+  completed Boolean     @default(false)
+  percent   Int         @default(0)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     CourseVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId, courseId])
+  @@map("video_progress")
 }
 
 enum CourseEnrollmentStatus {

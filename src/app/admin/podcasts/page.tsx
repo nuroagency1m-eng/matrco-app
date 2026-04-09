@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Mic, Plus, Trash2, Edit2, Check, X, Loader2 } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Mic, Plus, Edit2, Trash2, Check, X, Loader2, Upload } from 'lucide-react'
 
 interface Podcast {
   id: string
@@ -14,17 +14,28 @@ interface Podcast {
   createdAt: string
 }
 
-const EMPTY = { title: '', description: '', coverUrl: '', embedUrl: '', order: '0', active: true }
+interface PodcastModalData {
+  id?: string
+  title: string
+  description: string
+  coverUrl: string
+  embedUrl: string
+  order: string
+  active: boolean
+}
+
+const EMPTY: PodcastModalData = { title: '', description: '', coverUrl: '', embedUrl: '', order: '0', active: true }
 
 export default function AdminPodcastsPage() {
   const [podcasts, setPodcasts] = useState<Podcast[]>([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [editing, setEditing] = useState<Podcast | null>(null)
-  const [form, setForm] = useState(EMPTY)
+  const [modal, setModal] = useState<{ mode: 'create' | 'edit'; data: PodcastModalData } | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const coverInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     setLoading(true)
@@ -33,107 +44,97 @@ export default function AdminPodcastsPage() {
     setPodcasts(d.podcasts ?? [])
     setLoading(false)
   }
-
   useEffect(() => { load() }, [])
 
-  function openCreate() {
-    setEditing(null)
-    setForm(EMPTY)
-    setSaveError(null)
-    setShowModal(true)
-  }
-
-  function openEdit(p: Podcast) {
-    setEditing(p)
-    setForm({
-      title: p.title,
-      description: p.description ?? '',
-      coverUrl: p.coverUrl ?? '',
-      embedUrl: p.embedUrl,
-      order: String(p.order),
-      active: p.active,
-    })
-    setSaveError(null)
-    setShowModal(true)
+  async function uploadCover(file: File) {
+    setUploadingCover(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploadingCover(false)
+    if (data.url && modal) {
+      setModal({ ...modal, data: { ...modal.data, coverUrl: data.url } })
+    } else {
+      setSaveError('Error al subir la imagen.')
+    }
   }
 
   async function handleSave() {
-    if (!form.title.trim() || !form.embedUrl.trim()) { setSaveError('Título y URL son obligatorios'); return }
-    setSaving(true)
-    setSaveError(null)
+    if (!modal) return
+    const { data, mode } = modal
+    if (!data.title.trim() || !data.embedUrl.trim()) { setSaveError('Título y URL son obligatorios'); return }
+    setSaving(true); setSaveError(null)
     const body = {
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      coverUrl: form.coverUrl.trim() || null,
-      embedUrl: form.embedUrl.trim(),
-      order: Number(form.order) || 0,
-      active: form.active,
+      title: data.title.trim(),
+      description: data.description.trim() || null,
+      coverUrl: data.coverUrl.trim() || null,
+      embedUrl: data.embedUrl.trim(),
+      order: Number(data.order) || 0,
+      active: data.active,
     }
-    const url = editing ? `/api/admin/podcasts/${editing.id}` : '/api/admin/podcasts'
-    const method = editing ? 'PATCH' : 'POST'
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const data = await res.json()
-    if (!res.ok) { setSaveError(data.error ?? 'Error'); setSaving(false); return }
-    setSaving(false)
-    setShowModal(false)
-    load()
+    const url = mode === 'edit' ? `/api/admin/podcasts/${data.id}` : '/api/admin/podcasts'
+    const res = await fetch(url, { method: mode === 'edit' ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const json = await res.json()
+    if (!res.ok) { setSaveError(json.error ?? 'Error'); setSaving(false); return }
+    setSaving(false); setModal(null); load()
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('¿Eliminar este episodio?')) return
-    setDeletingId(id)
-    await fetch(`/api/admin/podcasts/${id}`, { method: 'DELETE' })
-    setDeletingId(null)
-    load()
+  async function handleDelete() {
+    if (!deleteId) return
+    setDeleting(true)
+    await fetch(`/api/admin/podcasts/${deleteId}`, { method: 'DELETE' })
+    setDeleting(false); setDeleteId(null); load()
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Mic size={20} className="text-green-400" />
-          <h1 className="text-lg font-bold text-white">Podcasts</h1>
-          <span className="text-xs text-white/35">{podcasts.length} episodio{podcasts.length !== 1 ? 's' : ''}</span>
-        </div>
-        <button onClick={openCreate} className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-black" style={{ background: 'linear-gradient(135deg,#00FF88,#D203DD)' }}>
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="text-xl font-bold text-white uppercase tracking-widest">MY DIAMOND Podcasts</h1>
+        <div className="h-px w-16 mt-2 rounded-full" style={{ background: 'linear-gradient(90deg, transparent, #D203DD, #FF2DF7, transparent)' }} />
+      </div>
+
+      {/* Top bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>{podcasts.length} episodio{podcasts.length !== 1 ? 's' : ''}</p>
+        <button
+          onClick={() => { setSaveError(null); setModal({ mode: 'create', data: EMPTY }) }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 700,
+            background: 'linear-gradient(135deg, #D203DD 0%, #00FF88 100%)', color: '#000', border: 'none', cursor: 'pointer' }}
+        >
           <Plus size={14} /> Nuevo episodio
         </button>
       </div>
 
+      {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={24} className="animate-spin text-green-400" />
-        </div>
+        <div className="flex justify-center py-16"><Loader2 size={20} className="animate-spin text-white/30" /></div>
       ) : podcasts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Mic size={32} className="text-white/20 mb-3" />
-          <p className="text-sm text-white/40">No hay episodios todavía.</p>
-        </div>
+        <div className="text-center py-16 text-white/30 text-sm">No hay episodios aún.</div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {podcasts.map(p => (
-            <div key={p.id} className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              {/* Cover */}
-              <div style={{ width: 48, height: 48, borderRadius: 10, flexShrink: 0, background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.15)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {p.coverUrl ? <img src={p.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Mic size={18} className="text-green-400/50" />}
-              </div>
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-white truncate">{p.title}</p>
-                <p className="text-xs text-white/35 truncate mt-0.5">{p.embedUrl}</p>
-              </div>
-              {/* Status */}
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${p.active ? 'text-green-400 bg-green-500/10' : 'text-white/30 bg-white/5'}`}>
-                {p.active ? 'Activo' : 'Oculto'}
-              </span>
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-white/8 text-white/50 hover:text-white transition-colors">
-                  <Edit2 size={14} />
+            <div key={p.id} style={{ padding: '14px 16px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Cover */}
+                <div style={{ width: 48, height: 48, borderRadius: 10, flexShrink: 0, overflow: 'hidden', background: 'rgba(210,3,221,0.06)', border: '1px solid rgba(210,3,221,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {p.coverUrl ? <img src={p.coverUrl} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Mic size={16} className="text-white/20" />}
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.embedUrl} · {p.active ? 'Activo' : 'Oculto'}
+                  </p>
+                </div>
+                {/* Actions */}
+                <button onClick={() => { setSaveError(null); setModal({ mode: 'edit', data: { id: p.id, title: p.title, description: p.description ?? '', coverUrl: p.coverUrl ?? '', embedUrl: p.embedUrl, order: String(p.order), active: p.active } }) }}
+                  style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
+                  <Edit2 size={13} className="text-white/50" />
                 </button>
-                <button onClick={() => handleDelete(p.id)} disabled={deletingId === p.id} className="p-1.5 rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-colors">
-                  {deletingId === p.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                <button onClick={() => setDeleteId(p.id)}
+                  style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer' }}>
+                  <Trash2 size={13} className="text-red-400/70" />
                 </button>
               </div>
             </div>
@@ -141,68 +142,99 @@ export default function AdminPodcastsPage() {
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
+      {/* Delete confirm */}
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
+          <div style={{ background: '#0d0d15', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 8 }}>¿Eliminar episodio?</p>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 20 }}>Esta acción no se puede deshacer.</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setDeleteId(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleDelete} disabled={deleting} style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700, background: deleting ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.8)', border: 'none', color: '#fff', cursor: deleting ? 'not-allowed' : 'pointer' }}>
+                {deleting ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create / Edit modal */}
+      {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowModal(false) }}>
-          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: '#0d0d15', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-bold text-white">{editing ? 'Editar episodio' : 'Nuevo episodio'}</h3>
-              <button onClick={() => setShowModal(false)} className="text-white/40 hover:text-white"><X size={18} /></button>
+          onClick={e => { if (e.target === e.currentTarget) setModal(null) }}>
+          <div style={{ background: '#0d0d15', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 24, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: 0 }}>{modal.mode === 'create' ? 'Nuevo episodio' : 'Editar episodio'}</h3>
+              <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 18 }}><X size={18} /></button>
             </div>
 
-            <div className="flex flex-col gap-4">
-              {[
-                { key: 'title', label: 'Título *', placeholder: 'Ep. 1 — Cómo escalar tu negocio' },
-                { key: 'embedUrl', label: 'URL del episodio * (YouTube, Vimeo, Spotify)', placeholder: 'https://youtube.com/watch?v=...' },
-                { key: 'coverUrl', label: 'Imagen de portada (URL)', placeholder: 'https://...' },
-                { key: 'description', label: 'Descripción', placeholder: 'De qué trata este episodio...' },
-                { key: 'order', label: 'Orden', placeholder: '0' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs text-white/50 block mb-1.5">{f.label}</label>
-                  {f.key === 'description' ? (
-                    <textarea
-                      value={(form as any)[f.key]}
-                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      placeholder={f.placeholder}
-                      rows={3}
-                      className="w-full px-3 py-2 rounded-lg text-sm text-white resize-none"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none' }}
-                    />
-                  ) : (
-                    <input
-                      type={f.key === 'order' ? 'number' : 'text'}
-                      value={(form as any)[f.key]}
-                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      placeholder={f.placeholder}
-                      className="w-full px-3 py-2 rounded-lg text-sm text-white"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none' }}
-                    />
-                  )}
-                </div>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Cover upload */}
+              <div>
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>Portada</label>
+                <input ref={coverInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCover(f) }} />
+                {modal.data.coverUrl ? (
+                  <div style={{ position: 'relative', width: 80, height: 80, borderRadius: 10, overflow: 'hidden' }}>
+                    <img src={modal.data.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button onClick={() => setModal({ ...modal, data: { ...modal.data, coverUrl: '' } })}
+                      style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '2px 5px', color: '#fff', fontSize: 11 }}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => coverInputRef.current?.click()} disabled={uploadingCover}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.15)', cursor: uploadingCover ? 'wait' : 'pointer' }}>
+                    {uploadingCover ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                    {uploadingCover ? 'Subiendo...' : 'Subir imagen'}
+                  </button>
+                )}
+              </div>
+
+              {/* Title */}
+              <div>
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>Título *</label>
+                <input type="text" value={modal.data.title} onChange={e => setModal({ ...modal, data: { ...modal.data, title: e.target.value } })}
+                  placeholder="Ep. 1 — Cómo escalar tu negocio"
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>Descripción</label>
+                <textarea value={modal.data.description} onChange={e => setModal({ ...modal, data: { ...modal.data, description: e.target.value } })}
+                  placeholder="De qué trata este episodio..." rows={3}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Embed URL */}
+              <div>
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>URL del episodio (YouTube, Vimeo, Spotify) *</label>
+                <input type="text" value={modal.data.embedUrl} onChange={e => setModal({ ...modal, data: { ...modal.data, embedUrl: e.target.value } })}
+                  placeholder="https://youtube.com/watch?v=..."
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              {/* Order */}
+              <div>
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>Orden</label>
+                <input type="number" value={modal.data.order} onChange={e => setModal({ ...modal, data: { ...modal.data, order: e.target.value } })}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
 
               {/* Active toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/50">Visible para usuarios</span>
-                <button
-                  onClick={() => setForm(p => ({ ...p, active: !p.active }))}
-                  className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors"
-                  style={{ background: form.active ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.05)', color: form.active ? '#00FF88' : 'rgba(255,255,255,0.35)', border: `1px solid ${form.active ? 'rgba(0,255,136,0.25)' : 'rgba(255,255,255,0.08)'}` }}
-                >
-                  {form.active ? <><Check size={12} /> Activo</> : <><X size={12} /> Oculto</>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Visible para usuarios</label>
+                <button onClick={() => setModal({ ...modal, data: { ...modal.data, active: !modal.data.active } })}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', background: modal.data.active ? 'rgba(0,255,136,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${modal.data.active ? 'rgba(0,255,136,0.25)' : 'rgba(255,255,255,0.08)'}`, color: modal.data.active ? '#00FF88' : 'rgba(255,255,255,0.35)' }}>
+                  {modal.data.active ? <><Check size={12} /> Activo</> : <><X size={12} /> Oculto</>}
                 </button>
               </div>
 
-              {saveError && <p className="text-xs text-red-400">{saveError}</p>}
+              {saveError && <p style={{ fontSize: 12, color: '#ef4444' }}>{saveError}</p>}
 
-              <div className="flex gap-3 mt-1">
-                <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  Cancelar
-                </button>
-                <button onClick={handleSave} disabled={saving} className="flex-[2] py-2.5 rounded-xl text-sm font-bold text-black" style={{ background: saving ? 'rgba(0,255,136,0.3)' : 'linear-gradient(135deg,#00FF88,#D203DD)', cursor: saving ? 'not-allowed' : 'pointer' }}>
-                  {saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear episodio'}
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button onClick={() => setModal(null)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>Cancelar</button>
+                <button onClick={handleSave} disabled={saving}
+                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700, background: saving ? 'rgba(210,3,221,0.3)' : 'linear-gradient(135deg, #D203DD 0%, #00FF88 100%)', border: 'none', color: '#000', cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  {saving ? 'Guardando...' : modal.mode === 'create' ? 'Crear episodio' : 'Guardar cambios'}
                 </button>
               </div>
             </div>

@@ -12,7 +12,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="dashboard-root" style={{ background: 'linear-gradient(180deg, #0D1E79 0%, #D203DD 100%)', backgroundAttachment: 'fixed' }}>
+    <div className="dashboard-root" style={{ background: '#1C192C' }}>
       <PlanGuard />
       <InactivityLogout />
       <PermissionsModal />

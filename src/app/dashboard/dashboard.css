@@ -6,12 +6,12 @@
 :root {
     /* colours */
     --clr-bg: transparent;
-    --clr-surface: rgba(13, 30, 121, 0.4);
-    --clr-card: linear-gradient(180deg, #0D1E79 0%, #D203DD 100%);
-    --clr-card-alt: linear-gradient(180deg, #D203DD 0%, #0D1E79 100%);
+    --clr-surface: #26223D;
+    --clr-card: #2B2644;
+    --clr-card-alt: #322C52;
     --clr-card-gradient: linear-gradient(145deg, #0D1E79 0%, #D203DD 100%);
-    --clr-border: rgba(255, 255, 255, 0.15);
-    --clr-border-lg: rgba(255, 255, 255, 0.30);
+    --clr-border: rgba(255, 255, 255, 0.05);
+    --clr-border-lg: rgba(255, 255, 255, 0.10);
 
     --clr-accent: #D203DD;
     --clr-accent-lt: #e855f0;

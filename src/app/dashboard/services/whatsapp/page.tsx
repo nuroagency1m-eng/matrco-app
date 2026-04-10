@@ -1174,8 +1174,8 @@ Máximo 2 mensajes por turno.
 
 **5. Precio**
 Solo dar precios si el cliente los pide.
-- 1 unidad = precio unitario
-- 2 o más = promo correspondiente del catálogo
+- Precio normal = precio del producto
+- Si hay precio de oferta, mencionarlo como promoción especial
 
 Usa gatillos de ahorro, urgencia y beneficio real.
 
@@ -1401,7 +1401,6 @@ const EMPTY_PRODUCT = {
   warnings: '',
   priceUnit: '',
   pricePromo2: '',
-  priceSuper6: '',
   currency: 'USD',
   welcomeMessage: '',
   firstMessage: '',
@@ -1470,7 +1469,6 @@ function productToForm(p: Product): ProductFormState {
     warnings: p.warnings ?? '',
     priceUnit: p.priceUnit ?? '',
     pricePromo2: p.pricePromo2 ?? '',
-    priceSuper6: p.priceSuper6 ?? '',
     currency: p.currency ?? 'USD',
     welcomeMessage: p.welcomeMessage ?? '',
     firstMessage: p.firstMessage ?? '',
@@ -1521,7 +1519,7 @@ function formToPayload(f: ProductFormState, existingProduct?: Product | null) {
     warnings: f.warnings.trim() || null,
     priceUnit: f.priceUnit ? parseFloat(f.priceUnit) : null,
     pricePromo2: f.pricePromo2 ? parseFloat(f.pricePromo2) : null,
-    priceSuper6: f.priceSuper6 ? parseFloat(f.priceSuper6) : null,
+    priceSuper6: null,
     currency: f.currency || 'USD',
     welcomeMessage: f.welcomeMessage.trim() || null,
     firstMessage: f.firstMessage.trim() || null,
@@ -2122,6 +2120,7 @@ function ProductsTab({ bot }: { bot: Bot }) {
                       <div className="text-xs text-dark-400 mt-0.5 flex items-center gap-2 flex-wrap">
                         {product.category && <span>{product.category}</span>}
                         {product.priceUnit && <span>{product.currency ?? 'USD'} {product.priceUnit}</span>}
+                        {product.pricePromo2 && <span className="text-orange-400">{product.currency ?? 'USD'} {product.pricePromo2} <span className="text-[10px] text-orange-400/60">oferta</span></span>}
                         {product.imageMainUrls.length > 0 && <span>{product.imageMainUrls.length} img</span>}
                         {!product.active && <span className="text-dark-600 italic">inactivo</span>}
                         {product.sharedByUsername && (
@@ -2177,9 +2176,10 @@ function ProductsTab({ bot }: { bot: Bot }) {
                     <div className={`w-2 h-2 rounded-full shrink-0 ${product.active ? 'bg-neon-green/50' : 'bg-dark-600'}`} />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-white text-sm truncate">{product.name}</div>
-                      <div className="text-xs text-dark-400 mt-0.5 flex items-center gap-2">
+                      <div className="text-xs text-dark-400 mt-0.5 flex items-center gap-2 flex-wrap">
                         {product.category && <span>{product.category}</span>}
                         {product.priceUnit && <span>{product.currency ?? 'USD'} {product.priceUnit}</span>}
+                        {product.pricePromo2 && <span className="text-orange-400">{product.currency ?? 'USD'} {product.pricePromo2} <span className="text-[10px] text-orange-400/60">oferta</span></span>}
                       </div>
                     </div>
                     <button

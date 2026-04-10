@@ -188,7 +188,7 @@ export default function PreviewPage() {
                         </div>
 
                         {/* Instagram/Facebook feed mockup */}
-                        <div className="bg-[#0D1E79]/50 rounded-2xl overflow-hidden border border-purple-500/25">
+                        <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/15 backdrop-blur-md">
                             {/* Post header */}
                             <div className="flex items-center gap-3 p-3 border-b border-white/5">
                                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-black">

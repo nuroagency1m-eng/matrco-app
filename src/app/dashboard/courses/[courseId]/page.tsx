@@ -351,7 +351,7 @@ export default function CourseDetailPage() {
           {selectedVideo && (
             <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
               {/* Título del video activo */}
-              <div style={{ background: 'rgba(210,3,221,0.08)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ background: 'rgba(255,255,255,0.06)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#D203DD', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.15)', padding: '2px 8px', borderRadius: 6 }}>
                   {selectedIdx + 1} / {course.videos.length}
                 </span>
@@ -401,7 +401,7 @@ export default function CourseDetailPage() {
                       background: isActive ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
                       borderLeft: isActive ? '3px solid #D203DD' : '3px solid transparent',
                       borderRight: 'none', borderTop: 'none',
-                      borderBottom: idx < course.videos.length - 1 ? '1px solid rgba(210,3,221,0.1)' : 'none',
+                      borderBottom: idx < course.videos.length - 1 ? '1px solid rgba(255,255,255,0.07)' : 'none',
                       cursor: isUnlocked ? 'pointer' : 'default',
                       textAlign: 'left', width: '100%',
                       opacity: isUnlocked ? 1 : 0.45,

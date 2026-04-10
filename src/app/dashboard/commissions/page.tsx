@@ -100,7 +100,9 @@ function CommissionsContent() {
         {/* Bono de Patrocinio */}
         <div className="relative rounded-2xl p-6 overflow-hidden transition-all duration-300 hover:scale-[1.02]"
           style={{
-            background: 'linear-gradient(135deg, rgba(210,3,221,0.07), rgba(0,102,255,0.04))',
+            background: 'linear-gradient(135deg, rgba(154,203,255,0.12) 0%, rgba(255,125,224,0.12) 50%, rgba(162,102,255,0.12) 100%)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid rgba(255,255,255,0.15)',
           }}>
           <div className="absolute top-0 left-0 right-0 h-px"
@@ -167,8 +169,8 @@ function CommissionsContent() {
               const Icon = isSponsor ? Gift : Users
               return (
                 <div key={c.id} className="p-4 flex items-center justify-between transition-colors"
-                  style={{ borderBottom: '1px solid rgba(210,3,221,0.08)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(210,3,221,0.06)')}
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center"

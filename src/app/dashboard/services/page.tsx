@@ -127,7 +127,7 @@ export default function ServicesPage() {
           </div>
           <h1 className="text-xl font-black text-white uppercase tracking-widest">Servicios</h1>
         </div>
-        <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, rgba(210,3,221,0.5), rgba(13,30,121,0.3), transparent)' }} />
+        <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08), transparent)' }} />
         <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
           {!loading && plan !== 'NONE' && !expired
             ? `${PLAN_NAMES[plan]} activo · ${services.filter(s => isUnlocked(s.requiredPlan ?? null)).length} servicios desbloqueados`

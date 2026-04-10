@@ -182,7 +182,7 @@ export default function ServicesPage() {
                 <div key={service.id}
                   className={`relative rounded-3xl overflow-hidden transition-all duration-500 group ${unlocked ? 'hover:-translate-y-2' : 'opacity-60'}`}
                   style={{
-                    background: unlocked ? 'linear-gradient(135deg, rgba(154, 203, 255, 0.35) 0%, rgba(255, 125, 224, 0.35) 50%, rgba(162, 102, 255, 0.35) 100%)' : '#2B2644',
+                    background: unlocked ? 'linear-gradient(135deg, rgba(154, 203, 255, 0.12) 0%, rgba(255, 125, 224, 0.12) 50%, rgba(162, 102, 255, 0.12) 100%)' : '#2B2644',
                     backdropFilter: unlocked ? 'blur(16px)' : 'none',
                     WebkitBackdropFilter: unlocked ? 'blur(16px)' : 'none',
                     border: `1px solid ${unlocked ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)'}`,

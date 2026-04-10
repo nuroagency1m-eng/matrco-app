@@ -175,7 +175,7 @@ export default function DashboardPage() {
               <Link key={s.href} href={s.href} style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="group" style={{
                   position: 'relative', borderRadius: 18, overflow: 'hidden', padding: '14px 14px 12px',
-                  background: 'linear-gradient(135deg, rgba(154, 203, 255, 0.35) 0%, rgba(255, 125, 224, 0.35) 50%, rgba(162, 102, 255, 0.35) 100%)',
+                  background: 'linear-gradient(135deg, rgba(154, 203, 255, 0.12) 0%, rgba(255, 125, 224, 0.12) 50%, rgba(162, 102, 255, 0.12) 100%)',
                   backdropFilter: 'blur(16px)',
                   WebkitBackdropFilter: 'blur(16px)',
                   border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                 <Link key={s.href} href={s.href} style={{ textDecoration: 'none', display: 'block' }}>
                   <div style={{
                     position: 'relative', borderRadius: 20, overflow: 'hidden', padding: '20px 18px 16px',
-                    background: 'linear-gradient(135deg, rgba(154, 203, 255, 0.35) 0%, rgba(255, 125, 224, 0.35) 50%, rgba(162, 102, 255, 0.35) 100%)',
+                    background: 'linear-gradient(135deg, rgba(154, 203, 255, 0.12) 0%, rgba(255, 125, 224, 0.12) 50%, rgba(162, 102, 255, 0.12) 100%)',
                     backdropFilter: 'blur(16px)',
                     WebkitBackdropFilter: 'blur(16px)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',

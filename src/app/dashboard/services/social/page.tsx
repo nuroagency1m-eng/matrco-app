@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Send, Calendar, History, BarChart2, Zap, Image, Video, Sparkles, Wand2, FileText, Trash2, Plus, Loader2, CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react'
+import AIKeySelector from '@/components/AIKeySelector'
 
 const NETWORKS = [
     { id: 'FACEBOOK', label: 'Facebook', icon: '📘', color: '#1877F2', supportsText: true, supportsImage: true, supportsVideo: true, supportsStory: true },
@@ -206,10 +207,13 @@ export default function SocialPage() {
                     </h1>
                     <p className="text-dark-400 text-xs sm:text-sm mt-1">Publica en Facebook, Instagram, TikTok y YouTube</p>
                 </div>
-                <button onClick={() => { setScript(''); setScriptTopic(''); setScriptModal(true) }}
-                    className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-xl bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-all text-sm font-medium whitespace-nowrap self-start flex-shrink-0">
+                <div className="flex items-center gap-2 self-start flex-shrink-0 flex-wrap">
+                  <AIKeySelector compact />
+                  <button onClick={() => { setScript(''); setScriptTopic(''); setScriptModal(true) }}
+                    className="flex items-center gap-2 px-3 py-2 sm:px-4 rounded-xl bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-all text-sm font-medium whitespace-nowrap">
                     <FileText size={14} /> Guión de video
-                </button>
+                  </button>
+                </div>
             </div>
 
             {error && (

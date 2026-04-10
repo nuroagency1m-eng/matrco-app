@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import AIKeySelector from '@/components/AIKeySelector'
 
 const PLATFORMS = [
     { id: 'META', label: 'Meta Ads', sub: 'Facebook & Instagram', color: '#0081FB', letter: 'f', textColor: 'text-blue-400', glow: 'rgba(0,129,251,0.15)', comingSoon: false },
@@ -151,6 +152,7 @@ function AdsDashboardInner() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-wrap">
+                        <AIKeySelector compact />
                         <Link href="/dashboard/services/ads/wizard"
                             className="flex items-center gap-2 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all active:scale-[0.97] shadow-[0_0_30px_rgba(139,92,246,0.35)]"
                             style={{ background: 'linear-gradient(135deg, #D203DD, #3b82f6)' }}>

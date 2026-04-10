@@ -24,6 +24,8 @@ model User {
   isAdmin             Boolean              @default(false) @map("is_admin")
   planExpiresAt       DateTime?            @map("plan_expires_at")
   extraBots           Int                  @default(0) @map("extra_bots")
+  aiCredits           Int                  @default(0) @map("ai_credits")
+  preferOwnKey        Boolean              @default(false) @map("prefer_own_key")
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
   bots                Bot[]
@@ -1250,4 +1252,12 @@ model DeviceVerifyCode {
 
   @@index([userId, deviceId])
   @@map("device_verify_codes")
+}
+
+model AdminConfig {
+  id           String   @id @default("global")
+  openaiKeyEnc String?  @map("openai_key_enc")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_configs")
 }

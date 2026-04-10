@@ -19,6 +19,7 @@ import {
   BookOpen,
   Store,
   Mic,
+  Cpu,
 } from 'lucide-react'
 
 const NAV = [
@@ -27,6 +28,7 @@ const NAV = [
   { href: '/admin/purchases', label: 'Compras', icon: ShoppingBag },
   { href: '/admin/withdrawals', label: 'Retiros', icon: Wallet },
   { href: '/admin/bonuses', label: 'Bonos Extra', icon: Gift },
+  { href: '/admin/ai-credits', label: 'Créditos AI', icon: Cpu },
   { href: '/admin/clipping', label: 'Clipping', icon: Play },
   { href: '/admin/courses', label: 'Cursos', icon: BookOpen },
   { href: '/admin/podcasts', label: 'Podcasts', icon: Mic },

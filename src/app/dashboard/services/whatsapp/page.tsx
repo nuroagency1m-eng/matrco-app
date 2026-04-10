@@ -2013,6 +2013,18 @@ function ProductsTab({ bot }: { bot: Bot }) {
 
   useEffect(() => { loadProducts() }, [loadProducts])
 
+  async function handleDeleteProduct(productId: string) {
+    if (!confirm('¿Eliminar este producto permanentemente? Se quitará de todos los agentes y no se puede deshacer.')) return
+    setActioning(productId)
+    try {
+      await fetch(`/api/products/${productId}`, { method: 'DELETE' })
+      setAssigned(ps => ps.filter(p => p.id !== productId))
+      setAvailable(ps => ps.filter(p => p.id !== productId))
+    } finally {
+      setActioning(null)
+    }
+  }
+
   async function handleUnassign(productId: string) {
     if (!confirm('¿Quitar este producto del bot?')) return
     setActioning(productId)
@@ -2154,6 +2166,14 @@ function ProductsTab({ bot }: { bot: Bot }) {
                       >
                         {actioning === product.id ? <Spinner /> : <X className="w-3.5 h-3.5" />}
                       </button>
+                      <button
+                        onClick={() => handleDeleteProduct(product.id)}
+                        disabled={actioning === product.id}
+                        className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-dark-400 hover:text-red-400 disabled:opacity-50"
+                        title="Eliminar producto permanentemente"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -2182,14 +2202,24 @@ function ProductsTab({ bot }: { bot: Bot }) {
                         {product.pricePromo2 && <span className="text-orange-400">{product.currency ?? 'USD'} {product.pricePromo2} <span className="text-[10px] text-orange-400/60">oferta</span></span>}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleAssign(product)}
-                      disabled={actioning === product.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-neon-green/10 text-neon-green hover:bg-neon-green/20 transition-colors disabled:opacity-50"
-                    >
-                      {actioning === product.id ? <Spinner /> : <Plus className="w-3 h-3" />}
-                      Asignar
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleAssign(product)}
+                        disabled={actioning === product.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-neon-green/10 text-neon-green hover:bg-neon-green/20 transition-colors disabled:opacity-50"
+                      >
+                        {actioning === product.id ? <Spinner /> : <Plus className="w-3 h-3" />}
+                        Asignar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProduct(product.id)}
+                        disabled={actioning === product.id}
+                        className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-dark-400 hover:text-red-400 disabled:opacity-50"
+                        title="Eliminar producto permanentemente"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

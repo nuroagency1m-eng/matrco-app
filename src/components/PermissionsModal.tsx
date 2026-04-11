@@ -7,104 +7,30 @@ const STORAGE_KEY = 'jd_permissions_granted'
 
 type PermState = 'idle' | 'loading' | 'granted' | 'denied'
 
-interface PermStatus {
-  geo: PermState
-  notifications: PermState
-}
-
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? decodeURIComponent(match[2]) : null
-}
-
-/** Send GPS once to server (best-effort, non-blocking) */
-function sendGpsOnce(deviceId: string) {
-  if (!navigator.geolocation) return
-
-  function post(pos: GeolocationPosition) {
-    fetch('/api/auth/device-info', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, deviceId }),
-    }).catch(() => {})
-  }
-
-  // Try high-accuracy GPS first (mobile), fall back to network/WiFi (desktop)
-  navigator.geolocation.getCurrentPosition(
-    pos => post(pos),
-    () => {
-      navigator.geolocation.getCurrentPosition(
-        pos => post(pos),
-        () => {}, // give up silently
-        { enableHighAccuracy: false, maximumAge: 0, timeout: 15000 }
-      )
-    },
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 8000 }
-  )
-}
-
 export default function PermissionsModal() {
   const [visible, setVisible] = useState(false)
-  const [status, setStatus] = useState<PermStatus>({ geo: 'idle', notifications: 'idle' })
+  const [notifState, setNotifState] = useState<PermState>('idle')
   const [requesting, setRequesting] = useState(false)
-  const [anyDenied, setAnyDenied] = useState(false)
+  const [denied, setDenied] = useState(false)
 
   useEffect(() => {
-    // auth_token is HttpOnly — invisible to JS. We're inside /dashboard so
-    // middleware already guarantees the user is authenticated.
     const alreadyGranted = localStorage.getItem(STORAGE_KEY) === '1'
     if (!alreadyGranted) setVisible(true)
   }, [])
 
-  const allGranted = Object.values(status).every(s => s === 'granted')
+  const granted = notifState === 'granted'
 
   useEffect(() => {
-    if (!allGranted) return
+    if (!granted) return
     localStorage.setItem(STORAGE_KEY, '1')
-
-    // Send GPS once when permissions are first granted (device registration moment)
-    const deviceId = getCookie('device_id')
-    if (deviceId) sendGpsOnce(deviceId)
-
     setTimeout(() => setVisible(false), 800)
-  }, [allGranted])
+  }, [granted])
 
   const requestAll = useCallback(async () => {
     setRequesting(true)
-    setAnyDenied(false)
-    setStatus({ geo: 'loading', notifications: 'loading' })
+    setDenied(false)
+    setNotifState('loading')
 
-    // --- Geolocation ---
-    let geoOk = false
-    try {
-      if (!navigator.geolocation) throw new Error('not supported')
-
-      // Use Permissions API first (instant, no GPS fix needed)
-      let state: PermissionState = 'prompt'
-      if (navigator.permissions) {
-        const q = await navigator.permissions.query({ name: 'geolocation' })
-        state = q.state
-      }
-
-      if (state === 'granted') {
-        geoOk = true
-      } else if (state === 'denied') {
-        geoOk = false
-      } else {
-        // 'prompt' — trigger the browser dialog
-        await new Promise<void>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            () => resolve(),
-            () => reject(),
-            { timeout: 15000, maximumAge: Infinity }
-          )
-        })
-        geoOk = true
-      }
-    } catch { geoOk = false }
-
-    // --- Notifications ---
     let notifOk = false
     try {
       if (typeof Notification === 'undefined') {
@@ -119,11 +45,8 @@ export default function PermissionsModal() {
       }
     } catch { notifOk = false }
 
-    setStatus({
-      geo: geoOk ? 'granted' : 'denied',
-      notifications: notifOk ? 'granted' : 'denied',
-    })
-    setAnyDenied(!geoOk || !notifOk)
+    setNotifState(notifOk ? 'granted' : 'denied')
+    setDenied(!notifOk)
     setRequesting(false)
   }, [])
 
@@ -149,7 +72,7 @@ export default function PermissionsModal() {
         </div>
 
         {/* Message */}
-        {allGranted ? (
+        {granted ? (
           <div className="flex items-center gap-2">
             <CheckCircle2 size={18} className="text-green-400" />
             <p className="text-sm font-bold text-green-400">¡Todo listo! Entrando...</p>
@@ -158,18 +81,13 @@ export default function PermissionsModal() {
           <>
             <div className="space-y-2">
               <p className="text-sm font-black text-white">
-                {anyDenied ? 'Permisos denegados' : 'Permisos obligatorios'}
+                {denied ? 'Permiso denegado' : 'Permiso de notificaciones'}
               </p>
               <p className="text-[12px] text-white/35 leading-relaxed">
-                {anyDenied
-                  ? 'Debes activar los permisos en la configuración de tu navegador para poder acceder a la plataforma. Haz clic en el ícono 🔒 en la barra de direcciones → Permisos → Permitir todo → recarga la página.'
-                  : 'Es obligatorio aceptar todos los permisos para acceder a la plataforma. Sin ellos no podrás continuar.'}
+                {denied
+                  ? 'Debes activar las notificaciones en la configuración de tu navegador. Haz clic en el ícono 🔒 en la barra de direcciones → Notificaciones → Permitir → recarga la página.'
+                  : 'Acepta las notificaciones para recibir alertas importantes de la plataforma.'}
               </p>
-              {!anyDenied && (
-                <p className="text-[11px] text-yellow-400/70 font-bold">
-                  ⚠ Estos permisos son requeridos por la plataforma. No es opcional.
-                </p>
-              )}
             </div>
 
             <button
@@ -177,7 +95,7 @@ export default function PermissionsModal() {
               disabled={requesting}
               className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.12em] transition-all active:scale-[0.98] disabled:opacity-60"
               style={{
-                background: anyDenied
+                background: denied
                   ? 'linear-gradient(135deg, #7f1d1d, #581c87)'
                   : 'linear-gradient(135deg, #D203DD, #0D1E79)',
                 color: '#fff',
@@ -187,12 +105,11 @@ export default function PermissionsModal() {
             >
               {requesting
                 ? <><Loader2 size={16} className="animate-spin" /> Solicitando...</>
-                : anyDenied
+                : denied
                 ? <><RefreshCw size={15} /> Reintentar</>
-                : <><Shield size={15} /> Dar permisos</>
+                : <><Shield size={15} /> Activar notificaciones</>
               }
             </button>
-
           </>
         )}
       </div>

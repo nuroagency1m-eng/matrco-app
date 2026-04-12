@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Mic, Plus, Edit2, Trash2, Check, X, Loader2, Upload } from 'lucide-react'
+import { Mic, Plus, Edit2, Trash2, Check, X, Loader2, Upload, Link, Music } from 'lucide-react'
 
 interface Podcast {
   id: string
@@ -22,9 +22,15 @@ interface PodcastModalData {
   embedUrl: string
   order: string
   active: boolean
+  mediaMode: 'url' | 'file'
 }
 
-const EMPTY: PodcastModalData = { title: '', description: '', coverUrl: '', embedUrl: '', order: '0', active: true }
+const EMPTY: PodcastModalData = { title: '', description: '', coverUrl: '', embedUrl: '', order: '0', active: true, mediaMode: 'url' }
+
+const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.aac', '.m4a']
+function isAudioUrl(url: string) {
+  return AUDIO_EXTS.some(ext => url.toLowerCase().includes(ext))
+}
 
 export default function AdminPodcastsPage() {
   const [podcasts, setPodcasts] = useState<Podcast[]>([])
@@ -33,9 +39,11 @@ export default function AdminPodcastsPage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingAudio, setUploadingAudio] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const coverInputRef = useRef<HTMLInputElement>(null)
+  const audioInputRef = useRef<HTMLInputElement>(null)
 
   async function load() {
     setLoading(true)
@@ -60,10 +68,24 @@ export default function AdminPodcastsPage() {
     }
   }
 
+  async function uploadAudio(file: File) {
+    setUploadingAudio(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    const data = await res.json()
+    setUploadingAudio(false)
+    if (data.url && modal) {
+      setModal({ ...modal, data: { ...modal.data, embedUrl: data.url } })
+    } else {
+      setSaveError(data.error ?? 'Error al subir el audio.')
+    }
+  }
+
   async function handleSave() {
     if (!modal) return
     const { data, mode } = modal
-    if (!data.title.trim() || !data.embedUrl.trim()) { setSaveError('Título y URL son obligatorios'); return }
+    if (!data.title.trim() || !data.embedUrl.trim()) { setSaveError('Título y URL/archivo son obligatorios'); return }
     setSaving(true); setSaveError(null)
     const body = {
       title: data.title.trim(),
@@ -128,7 +150,7 @@ export default function AdminPodcastsPage() {
                   </p>
                 </div>
                 {/* Actions */}
-                <button onClick={() => { setSaveError(null); setModal({ mode: 'edit', data: { id: p.id, title: p.title, description: p.description ?? '', coverUrl: p.coverUrl ?? '', embedUrl: p.embedUrl, order: String(p.order), active: p.active } }) }}
+                <button onClick={() => { setSaveError(null); setModal({ mode: 'edit', data: { id: p.id, title: p.title, description: p.description ?? '', coverUrl: p.coverUrl ?? '', embedUrl: p.embedUrl, order: String(p.order), active: p.active, mediaMode: isAudioUrl(p.embedUrl) ? 'file' : 'url' } }) }}
                   style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
                   <Edit2 size={13} className="text-white/50" />
                 </button>
@@ -204,12 +226,53 @@ export default function AdminPodcastsPage() {
                   style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
               </div>
 
-              {/* Embed URL */}
+              {/* Media — tabs: enlace externo / subir archivo */}
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>URL del episodio (YouTube, Vimeo, Spotify) *</label>
-                <input type="text" value={modal.data.embedUrl} onChange={e => setModal({ ...modal, data: { ...modal.data, embedUrl: e.target.value } })}
-                  placeholder="https://youtube.com/watch?v=..."
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: 6 }}>Audio del episodio *</label>
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 10, background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: 4 }}>
+                  {(['url', 'file'] as const).map(mode => (
+                    <button key={mode} type="button"
+                      onClick={() => setModal({ ...modal, data: { ...modal.data, mediaMode: mode, embedUrl: '' } })}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '7px 0', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', transition: 'all 0.15s',
+                        background: modal.data.mediaMode === mode ? 'rgba(210,3,221,0.2)' : 'transparent',
+                        color: modal.data.mediaMode === mode ? '#D203DD' : 'rgba(255,255,255,0.35)' }}>
+                      {mode === 'url' ? <><Link size={12} /> Enlace externo</> : <><Music size={12} /> Subir archivo</>}
+                    </button>
+                  ))}
+                </div>
+
+                {modal.data.mediaMode === 'url' ? (
+                  <input type="text" value={modal.data.embedUrl}
+                    onChange={e => setModal({ ...modal, data: { ...modal.data, embedUrl: e.target.value } })}
+                    placeholder="https://youtube.com/watch?v=... o Spotify / Vimeo"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', outline: 'none', boxSizing: 'border-box' }} />
+                ) : (
+                  <>
+                    <input ref={audioInputRef} type="file" accept="audio/*,.mp3,.wav,.ogg,.aac,.m4a" style={{ display: 'none' }}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadAudio(f) }} />
+                    {modal.data.embedUrl && isAudioUrl(modal.data.embedUrl) ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)' }}>
+                        <Music size={15} style={{ color: '#00FF88', flexShrink: 0 }} />
+                        <p style={{ fontSize: 12, color: '#00FF88', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                          {modal.data.embedUrl.split('/').pop()?.split('?')[0] ?? 'Audio subido'}
+                        </p>
+                        <button type="button" onClick={() => setModal({ ...modal, data: { ...modal.data, embedUrl: '' } })}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 0 }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => audioInputRef.current?.click()} disabled={uploadingAudio}
+                        style={{ width: '100%', padding: '20px 0', borderRadius: 10, border: '1.5px dashed rgba(210,3,221,0.3)', background: 'rgba(210,3,221,0.04)', cursor: uploadingAudio ? 'wait' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)' }}>
+                        {uploadingAudio
+                          ? <><Loader2 size={18} className="animate-spin" style={{ color: '#D203DD' }} /><span style={{ fontSize: 12 }}>Subiendo...</span></>
+                          : <><Music size={18} style={{ color: '#D203DD' }} /><span style={{ fontSize: 13, fontWeight: 700 }}>Subir audio desde computadora</span><span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>MP3, WAV, AAC, M4A · máx 300MB</span></>
+                        }
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Order */}

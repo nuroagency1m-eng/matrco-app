@@ -12,6 +12,11 @@ interface Podcast {
   embedUrl: string
 }
 
+const AUDIO_EXTS = ['.mp3', '.wav', '.ogg', '.aac', '.m4a']
+function isDirectAudio(url: string) {
+  return AUDIO_EXTS.some(ext => url.toLowerCase().includes(ext))
+}
+
 function getEmbedUrl(url: string): string {
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/)
   if (yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0`
@@ -63,15 +68,30 @@ export default function PodcastDetailPage() {
           <i className="fa-solid fa-microphone" style={{ fontSize: 14, color: '#D203DD' }} />
           <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0 }}>{podcast.title}</p>
         </div>
-        <div style={{ position: 'relative', paddingBottom: '56.25%', background: '#000' }}>
-          <iframe
-            src={getEmbedUrl(podcast.embedUrl)}
-            title={podcast.title}
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowFullScreen
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-          />
-        </div>
+        {isDirectAudio(podcast.embedUrl) ? (
+          <div style={{ background: 'linear-gradient(135deg, rgba(210,3,221,0.08), rgba(13,11,26,1))', padding: '28px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            {podcast.coverUrl && (
+              <img src={podcast.coverUrl} alt={podcast.title} style={{ width: 100, height: 100, borderRadius: 12, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+            )}
+            <audio
+              controls
+              src={podcast.embedUrl}
+              style={{ width: '100%', maxWidth: 480, accentColor: '#D203DD' }}
+            >
+              Tu navegador no soporta reproducción de audio.
+            </audio>
+          </div>
+        ) : (
+          <div style={{ position: 'relative', paddingBottom: '56.25%', background: '#000' }}>
+            <iframe
+              src={getEmbedUrl(podcast.embedUrl)}
+              title={podcast.title}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Info */}

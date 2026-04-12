@@ -292,7 +292,11 @@ function CheckoutContent() {
       </div>
 
       {/* Tabs: método de pago — solo muestra los habilitados por el admin */}
-      {!cryptoEnabled && !manualEnabled && !faseGlobalEnabled ? (
+      {loadingSettings ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 size={18} className="animate-spin text-white/20" />
+        </div>
+      ) : !cryptoEnabled && !manualEnabled && !faseGlobalEnabled ? (
         <div className="flex items-center gap-3 py-4 px-4 bg-orange-500/8 border border-orange-500/20 rounded-2xl">
           <AlertCircle size={18} className="text-orange-400 shrink-0" />
           <p className="text-xs text-orange-400 font-bold">Los métodos de pago están temporalmente deshabilitados. Contacta al equipo.</p>
@@ -333,7 +337,7 @@ function CheckoutContent() {
             plan={plan}
             price={price}
             onSuccess={(status) => setCryptoStatus(status)}
-            onCancel={() => setPaymentMethod('MANUAL')}
+            onCancel={() => setPaymentMethod(faseGlobalEnabled ? 'FASE_GLOBAL' : manualEnabled ? 'MANUAL' : 'CRYPTO')}
           />
         </div>
       )}

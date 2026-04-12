@@ -116,15 +116,20 @@ function CheckoutContent() {
   async function uploadProof(file: File) {
     setUploading(true)
     setError('')
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload', { method: 'POST', body: fd })
-    const data = await res.json()
-    setUploading(false)
-    if (data.url) {
-      setProofUrl(data.url)
-    } else {
-      setError('Error al subir el comprobante. Inténtalo de nuevo.')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setProofUrl(data.url)
+      } else {
+        setError(data.error ?? 'Error al subir el comprobante. Inténtalo de nuevo.')
+      }
+    } catch {
+      setError('Error al subir el comprobante. Verifica tu conexión e inténtalo de nuevo.')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -135,17 +140,22 @@ function CheckoutContent() {
       return
     }
     setSubmitting(true)
-    const res = await fetch('/api/pack-requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan, paymentProofUrl: proofUrl }),
-    })
-    const data = await res.json()
-    setSubmitting(false)
-    if (res.ok) {
-      setSuccess(true)
-    } else {
-      setError(data.error ?? 'Error al enviar solicitud')
+    try {
+      const res = await fetch('/api/pack-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, paymentProofUrl: proofUrl }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setSuccess(true)
+      } else {
+        setError(data.error ?? 'Error al enviar solicitud')
+      }
+    } catch {
+      setError('Error al enviar la solicitud. Verifica tu conexión e inténtalo de nuevo.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -154,21 +164,26 @@ function CheckoutContent() {
     if (!proofUrl) { setError('Debes subir tu comprobante de Fase Global.'); return }
     if (!faseGlobalCode.trim()) { setError('Debes ingresar tu código de Fase Global.'); return }
     setSubmitting(true)
-    const res = await fetch('/api/pack-requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan: 'BASIC',
-        paymentMethod: 'FASE_GLOBAL',
-        paymentProofUrl: proofUrl,
-        faseGlobalCode: faseGlobalCode.trim(),
-        faseGlobalNote: faseGlobalNote.trim(),
-      }),
-    })
-    const data = await res.json()
-    setSubmitting(false)
-    if (res.ok) { setSuccess(true) }
-    else { setError(data.error ?? 'Error al enviar solicitud') }
+    try {
+      const res = await fetch('/api/pack-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: 'BASIC',
+          paymentMethod: 'FASE_GLOBAL',
+          paymentProofUrl: proofUrl,
+          faseGlobalCode: faseGlobalCode.trim(),
+          faseGlobalNote: faseGlobalNote.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) { setSuccess(true) }
+      else { setError(data.error ?? 'Error al enviar solicitud') }
+    } catch {
+      setError('Error al enviar la solicitud. Verifica tu conexión e inténtalo de nuevo.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (!packInfo) {

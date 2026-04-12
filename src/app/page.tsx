@@ -86,7 +86,7 @@ function LiveChatSim() {
   const [messages, setMessages] = useState<typeof CHAT_SCRIPT>([])
   const [typingPerson, setTypingPerson] = useState<Person | null>(null)
   const [step, setStep] = useState(0)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const chatBodyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (step >= CHAT_SCRIPT.length) {
@@ -109,7 +109,8 @@ function LiveChatSim() {
   }, [step])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = chatBodyRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [messages, typingPerson])
 
   const p = PEOPLE
@@ -138,7 +139,7 @@ function LiveChatSim() {
       </div>
 
       {/* Chat background */}
-      <div style={{ height: 310, overflowY: 'auto', background: '#0B141A', backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")", padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 4, scrollbarWidth: 'none' }}>
+      <div ref={chatBodyRef} style={{ height: 310, overflowY: 'auto', background: '#0B141A', backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")", padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 4, scrollbarWidth: 'none' }}>
 
         {/* Date badge */}
         <div style={{ textAlign: 'center', margin: '4px 0 10px' }}>
@@ -190,7 +191,6 @@ function LiveChatSim() {
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* WhatsApp input bar */}

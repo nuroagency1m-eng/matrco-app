@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Bot, TrendingUp, Megaphone, Store, Layers, ArrowRight, CheckCircle2, Globe, Users, BarChart3, Star, Quote, GraduationCap, Share2, Zap, Crown, Sparkles, Play, MessageCircle } from 'lucide-react'
+import { Bot, TrendingUp, Megaphone, Store, Layers, ArrowRight, Globe, Users, BarChart3, Star, Quote, GraduationCap, Share2, Zap, MessageCircle } from 'lucide-react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PARTICLE CANVAS
@@ -230,18 +230,6 @@ const STATS = [
   { icon:BarChart3,    value:3,    suffix:' plataformas', label:'Publicidad digital' },
 ]
 
-const HOW = [
-  { step:'01', title:'Crea tu cuenta gratis',        desc:'Regístrate en menos de 2 minutos con el enlace de un miembro. Sin tarjeta de crédito. Solo tus datos básicos y ya estás dentro.',                    color:'#D203DD', tag:'Gratis' },
-  { step:'02', title:'Activa tu plan',               desc:'Elige entre Pack Básico, Pro o Elite según tus metas. Cada plan desbloquea más herramientas, más límites y mayor potencial de ingresos.',           color:'#00FF88', tag:'Desde $49 USD' },
-  { step:'03', title:'Lanza tus herramientas',       desc:'Activa tu bot, diseña tu tienda, crea tu landing. Todo guiado paso a paso. Sin conocimientos técnicos. En un día tienes todo funcionando.',         color:'#9B00FF', tag:'En 1 día' },
-  { step:'04', title:'Escala y genera ingresos',     desc:'Invita a tu red, automatiza tus ventas y cobra comisiones en tiempo real. Cuanto más activa sea tu red, mayor es tu ingreso pasivo mensual.',       color:'#00FF88', tag:'Ingreso pasivo' },
-]
-
-const PLANS = [
-  { id:'basic', name:'Pack Básico', price:'$49', icon:Zap, color:'#00BFFF', border:'rgba(0,191,255,0.25)', bg:'rgba(0,191,255,0.06)', features:['1 bot de WhatsApp con IA','1 tienda virtual','1 landing page','Hasta 5 anuncios/mes','Clipping incluido'] },
-  { id:'pro',   name:'Pack Pro',    price:'$99', icon:Sparkles, color:'#D203DD', border:'rgba(210,3,221,0.4)', bg:'rgba(210,3,221,0.08)', features:['2 bots de WhatsApp con IA','2 tiendas virtuales','3 landing pages','Hasta 15 anuncios/mes','Capacitaciones en vivo'], highlight:true },
-  { id:'elite', name:'Pack Elite',  price:'$199',icon:Crown, color:'#FF69B4', border:'rgba(255,105,180,0.3)', bg:'rgba(255,105,180,0.06)', features:['5 bots de WhatsApp con IA','5 tiendas virtuales','6 landing pages','Hasta 30 anuncios/mes','Manager dedicado 1:1'] },
-]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE
@@ -364,8 +352,8 @@ export default function HomePage() {
               <Link href="/register" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'14px 28px', borderRadius:14, fontSize:14, textDecoration:'none' }} className="btn-primary">
                 Comenzar ahora <ArrowRight size={15} />
               </Link>
-              <Link href="#como-funciona" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'14px 28px', borderRadius:14, fontSize:14, fontWeight:700, color:'rgba(255,255,255,0.6)', textDecoration:'none', border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.03)' }} className="btn-secondary">
-                <Play size={14} /> Ver cómo funciona
+              <Link href="/login" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'14px 28px', borderRadius:14, fontSize:14, fontWeight:700, color:'rgba(255,255,255,0.6)', textDecoration:'none', border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.03)' }} className="btn-secondary">
+                Iniciar sesión
               </Link>
             </div>
 
@@ -438,85 +426,6 @@ export default function HomePage() {
                   </div>
                   <p style={{ fontSize:15, fontWeight:800, color:'#fff', marginBottom:8 }}>{f.title}</p>
                   <p style={{ fontSize:13, color:'rgba(255,255,255,0.4)', lineHeight:1.65 }}>{f.desc}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section id="como-funciona" style={{ padding:'96px 24px', background:'rgba(0,0,0,0.2)' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:64 }}>
-            <p style={{ fontSize:11, fontWeight:700, letterSpacing:'0.2em', color:'rgba(0,255,136,0.7)', textTransform:'uppercase', marginBottom:12 }}>Simple desde el primer día</p>
-            <h2 style={{ fontSize:'clamp(26px, 4vw, 44px)', fontWeight:900, letterSpacing:'-0.02em' }}>
-              De cero a{' '}
-              <span style={{ background:'linear-gradient(135deg,#00FF88,#00BFFF)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>negocios automatizados</span>
-              <br />en 4 pasos
-            </h2>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:20 }}>
-            {HOW.map((h,i) => (
-              <div key={i} style={{ padding:'28px 24px', borderRadius:20, background:`linear-gradient(135deg, ${h.color}07, rgba(255,255,255,0.015))`, border:`1px solid ${h.color}18`, position:'relative', overflow:'hidden' }}>
-                <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg, transparent, ${h.color}60, transparent)` }} />
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-                  <span style={{ fontSize:36, fontWeight:900, color:`${h.color}25`, lineHeight:1 }}>{h.step}</span>
-                  <span style={{ fontSize:10, fontWeight:700, padding:'4px 10px', borderRadius:99, background:`${h.color}15`, color:h.color, border:`1px solid ${h.color}25`, letterSpacing:'0.06em' }}>{h.tag}</span>
-                </div>
-                <p style={{ fontSize:15, fontWeight:800, color:'#fff', marginBottom:10 }}>{h.title}</p>
-                <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.4)', lineHeight:1.65 }}>{h.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PLANS ────────────────────────────────────────────────────────── */}
-      <section style={{ padding:'96px 24px' }}>
-        <div style={{ maxWidth:1000, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:64 }}>
-            <p style={{ fontSize:11, fontWeight:700, letterSpacing:'0.2em', color:'rgba(210,3,221,0.7)', textTransform:'uppercase', marginBottom:12 }}>Planes y precios</p>
-            <h2 style={{ fontSize:'clamp(26px, 4vw, 44px)', fontWeight:900, letterSpacing:'-0.02em' }}>
-              Elige tu nivel de{' '}
-              <span style={{ background:'linear-gradient(135deg,#D203DD,#9B00FF)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>crecimiento</span>
-            </h2>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:20, alignItems:'start' }}>
-            {PLANS.map(p => {
-              const Icon = p.icon
-              return (
-                <div key={p.id} className="plan-card" style={{ borderRadius:24, border:`1px solid ${p.border}`, background:`linear-gradient(135deg, ${p.bg}, rgba(28,25,44,0.8))`, padding:'28px 24px', position:'relative', overflow:'hidden',
-                  boxShadow: p.highlight ? `0 0 60px ${p.color}15` : 'none',
-                  transform: p.highlight ? 'scale(1.03)' : 'none' }}>
-                  {p.highlight && (
-                    <div style={{ position:'absolute', top:-1, insetX:0, display:'flex', justifyContent:'center' }}>
-                      <span style={{ fontSize:10, fontWeight:800, padding:'4px 16px', borderRadius:'0 0 10px 10px', background:`linear-gradient(135deg,${p.color},#9B00FF)`, color:'#fff', letterSpacing:'0.1em', textTransform:'uppercase' }}>⭐ Más popular</span>
-                    </div>
-                  )}
-                  <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:`linear-gradient(90deg, transparent, ${p.color}60, transparent)` }} />
-                  <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, marginTop: p.highlight ? 12 : 0 }}>
-                    <div style={{ width:42, height:42, borderRadius:14, background:`${p.color}15`, border:`1px solid ${p.color}30`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <Icon size={20} style={{ color:p.color }} />
-                    </div>
-                    <div>
-                      <p style={{ fontSize:11, fontWeight:700, color:p.color, textTransform:'uppercase', letterSpacing:'0.12em', margin:0 }}>{p.name}</p>
-                      <p style={{ fontSize:28, fontWeight:900, color:'#fff', margin:0, lineHeight:1.1 }}>{p.price} <span style={{ fontSize:12, color:'rgba(255,255,255,0.3)', fontWeight:400 }}>USD / mes</span></p>
-                    </div>
-                  </div>
-                  <ul style={{ listStyle:'none', padding:0, margin:'0 0 24px', display:'flex', flexDirection:'column', gap:10 }}>
-                    {p.features.map((f,i) => (
-                      <li key={i} style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <CheckCircle2 size={14} style={{ color:p.color, flexShrink:0 }} />
-                        <span style={{ fontSize:13, color:'rgba(255,255,255,0.6)' }}>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, padding:'12px 0', borderRadius:14, fontSize:13, fontWeight:800, textDecoration:'none', color: p.highlight ? '#fff' : p.color, background: p.highlight ? `linear-gradient(135deg, ${p.color}, #9B00FF)` : `${p.color}12`, border: p.highlight ? 'none' : `1px solid ${p.color}30`, transition:'all .2s' }}>
-                    Empezar con {p.name} <ArrowRight size={13} />
-                  </Link>
                 </div>
               )
             })}

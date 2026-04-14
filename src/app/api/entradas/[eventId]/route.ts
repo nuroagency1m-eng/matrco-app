@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-/** GET /api/entradas/[eventId] — public event details */
+/** GET /api/entradas/[eventId] — public event details with ticket types */
 export async function GET(
   _req: NextRequest,
   { params }: { params: { eventId: string } }
@@ -10,30 +10,46 @@ export async function GET(
   try {
     const event = await prisma.event.findUnique({
       where: { id: params.eventId, active: true },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        image: true,
-        price: true,
-        date: true,
-        location: true,
-        capacity: true,
-        _count: { select: { tickets: { where: { status: { not: 'REJECTED' } } } } },
+      include: {
+        ticketTypes: {
+          where: { active: true },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
     })
 
     if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
+    if (!event.ticketTypes.length) return NextResponse.json({ error: 'Este evento no tiene entradas disponibles' }, { status: 404 })
 
-    const soldCount = event._count.tickets
-    const available = event.capacity != null ? event.capacity - soldCount : null
+    // For each type, compute sold count and availability
+    const typesWithAvailability = await Promise.all(
+      event.ticketTypes.map(async (tt) => {
+        const sold = await prisma.ticketOrder.aggregate({
+          _sum: { quantity: true },
+          where: { ticketTypeId: tt.id, status: { not: 'REJECTED' } },
+        })
+        const soldQty = sold._sum.quantity ?? 0
+        const available = tt.capacity != null ? tt.capacity - soldQty : null
+        return {
+          id: tt.id,
+          name: tt.name,
+          price: Number(tt.price),
+          capacity: tt.capacity,
+          available,
+          soldOut: available !== null && available <= 0,
+        }
+      })
+    )
 
     return NextResponse.json({
       event: {
-        ...event,
-        price: Number(event.price),
-        available,
-        soldOut: available !== null && available <= 0,
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        image: event.image,
+        date: event.date,
+        location: event.location,
+        ticketTypes: typesWithAvailability,
       },
     })
   } catch (err) {

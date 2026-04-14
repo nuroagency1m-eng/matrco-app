@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminUser, unauthorizedAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
 
-/** GET /api/admin/entradas/[eventId]/orders — list ticket orders for an event */
+/** GET /api/admin/entradas/[eventId]/orders */
 export async function GET(req: NextRequest, { params }: { params: { eventId: string } }) {
   const admin = await getAdminUser()
   if (!admin) return unauthorizedAdmin()
@@ -21,6 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { eventId: str
           { ticketCode: { contains: search.toUpperCase() } },
           { customerEmail: { contains: search.toLowerCase() } },
           { customerName: { contains: search, mode: 'insensitive' } },
+          { ticketTypeName: { contains: search, mode: 'insensitive' } },
         ],
       } : {}),
     },
@@ -28,6 +29,10 @@ export async function GET(req: NextRequest, { params }: { params: { eventId: str
   })
 
   return NextResponse.json({
-    tickets: tickets.map(t => ({ ...t, totalPrice: Number(t.totalPrice) })),
+    tickets: tickets.map(t => ({
+      ...t,
+      totalPrice: Number(t.totalPrice),
+      unitPrice: Number(t.unitPrice),
+    })),
   })
 }

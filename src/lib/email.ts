@@ -648,6 +648,7 @@ export async function sendTicketEmail(
   ticket: {
     ticketCode: string
     eventTitle: string
+    ticketTypeName?: string
     eventDate?: Date | null
     eventLocation?: string | null
     eventImage?: string | null
@@ -698,6 +699,7 @@ export async function sendTicketEmail(
           <p style="color:#ffffff;font-size:15px;font-weight:800;margin:0 0 8px;">${ticket.eventTitle}</p>
           ${dateStr ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">📅 ${dateStr}</p>` : ''}
           ${ticket.eventLocation ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">📍 ${ticket.eventLocation}</p>` : ''}
+          ${ticket.ticketTypeName ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">🏷 ${ticket.ticketTypeName}</p>` : ''}
           <p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">🎟 ${ticket.quantity} entrada${ticket.quantity > 1 ? 's' : ''}</p>
           <p style="color:#F5A623;font-size:13px;font-weight:700;margin:8px 0 0;">Total: $${ticket.totalPrice.toFixed(2)} USDT</p>
         </td>

@@ -46,10 +46,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { ticketId: 
         data: { status: 'APPROVED', notes: notes || null },
       })
 
-      // Send ticket email
       sendTicketEmail(ticket.customerEmail, ticket.customerName, {
         ticketCode: ticket.ticketCode,
         eventTitle: ticket.event.title,
+        ticketTypeName: ticket.ticketTypeName,
         eventDate: ticket.event.date,
         eventLocation: ticket.event.location,
         eventImage: ticket.event.image,

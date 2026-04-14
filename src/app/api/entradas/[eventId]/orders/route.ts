@@ -16,17 +16,23 @@ export async function POST(
   { params }: { params: { eventId: string } }
 ) {
   try {
-    const event = await prisma.event.findUnique({
-      where: { id: params.eventId, active: true },
-    })
-    if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
-
     const body = await req.json()
-    const { customerName, customerEmail, customerPhone, quantity, paymentMethod, proofUrl, txHash } = body
+    const { customerName, customerEmail, customerPhone, ticketTypeId, quantity, paymentMethod, proofUrl, txHash } = body
 
+    // Validate required fields
     if (!customerName?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 })
     if (!customerEmail?.trim() || !customerEmail.includes('@')) return NextResponse.json({ error: 'Email válido requerido' }, { status: 400 })
     if (!customerPhone?.trim()) return NextResponse.json({ error: 'Teléfono requerido' }, { status: 400 })
+    if (!ticketTypeId) return NextResponse.json({ error: 'Tipo de entrada requerido' }, { status: 400 })
+
+    // Load event and ticket type together
+    const ticketType = await prisma.ticketType.findUnique({
+      where: { id: ticketTypeId, active: true },
+      include: { event: true },
+    })
+    if (!ticketType) return NextResponse.json({ error: 'Tipo de entrada no disponible' }, { status: 404 })
+    if (ticketType.eventId !== params.eventId) return NextResponse.json({ error: 'Entrada no pertenece a este evento' }, { status: 400 })
+    if (!ticketType.event.active) return NextResponse.json({ error: 'Evento no disponible' }, { status: 404 })
 
     const qty = Math.max(1, parseInt(quantity) || 1)
     const pm: 'CRYPTO' | 'MANUAL' = paymentMethod === 'CRYPTO' ? 'CRYPTO' : 'MANUAL'
@@ -34,13 +40,14 @@ export async function POST(
     if (pm === 'CRYPTO' && !txHash?.trim()) return NextResponse.json({ error: 'Hash de transacción requerido' }, { status: 400 })
     if (pm === 'MANUAL' && !proofUrl?.trim()) return NextResponse.json({ error: 'Comprobante de pago requerido' }, { status: 400 })
 
-    // Verify txHash not already used (before expensive on-chain call)
+    // Verify txHash not already used
     if (pm === 'CRYPTO') {
       const used = await prisma.ticketOrder.findFirst({ where: { txHash: txHash.trim() } })
       if (used) return NextResponse.json({ error: 'Esta transacción ya fue usada' }, { status: 409 })
     }
 
-    const totalPrice = Number(event.price) * qty
+    const unitPrice = Number(ticketType.price)
+    const totalPrice = unitPrice * qty
 
     // On-chain verification for CRYPTO
     let finalStatus: 'PENDING' | 'APPROVED' = 'PENDING'
@@ -62,25 +69,28 @@ export async function POST(
       ticketCode = generateTicketCode()
     }
 
-    // Create order inside transaction — re-check capacity atomically to prevent race conditions
+    // Create order in transaction — re-check capacity atomically
     const order = await prisma.$transaction(async (tx) => {
-      if (event.capacity != null) {
-        const sold = await tx.ticketOrder.count({
-          where: { eventId: event.id, status: { not: 'REJECTED' } },
+      if (ticketType.capacity != null) {
+        const sold = await tx.ticketOrder.aggregate({
+          _sum: { quantity: true },
+          where: { ticketTypeId: ticketType.id, status: { not: 'REJECTED' } },
         })
-        if (sold + qty > event.capacity) {
-          throw new Error('CAPACITY_EXCEEDED')
-        }
+        const soldQty = (sold._sum.quantity ?? 0) + qty
+        if (soldQty > ticketType.capacity) throw new Error('CAPACITY_EXCEEDED')
       }
 
       return tx.ticketOrder.create({
         data: {
-          eventId: event.id,
+          eventId: params.eventId,
+          ticketTypeId: ticketType.id,
+          ticketTypeName: ticketType.name,
           customerName: customerName.trim(),
           customerEmail: customerEmail.trim().toLowerCase(),
           customerPhone: customerPhone.trim(),
           ticketCode,
           quantity: qty,
+          unitPrice,
           totalPrice,
           paymentMethod: pm,
           proofUrl: pm === 'MANUAL' ? proofUrl.trim() : null,
@@ -94,18 +104,17 @@ export async function POST(
       throw err
     })
 
-    if (!order) {
-      return NextResponse.json({ error: 'No hay suficientes entradas disponibles' }, { status: 409 })
-    }
+    if (!order) return NextResponse.json({ error: 'No hay suficientes entradas disponibles para ese tipo' }, { status: 409 })
 
-    // Send ticket email immediately if APPROVED (crypto verified)
+    // Send ticket email immediately if APPROVED (crypto auto-verified)
     if (finalStatus === 'APPROVED') {
       sendTicketEmail(order.customerEmail, order.customerName, {
         ticketCode: order.ticketCode,
-        eventTitle: event.title,
-        eventDate: event.date,
-        eventLocation: event.location,
-        eventImage: event.image,
+        eventTitle: ticketType.event.title,
+        ticketTypeName: ticketType.name,
+        eventDate: ticketType.event.date,
+        eventLocation: ticketType.event.location,
+        eventImage: ticketType.event.image,
         quantity: order.quantity,
         totalPrice: Number(order.totalPrice),
         paymentMethod: pm,

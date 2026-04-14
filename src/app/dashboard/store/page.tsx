@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
+interface EventTicketType { id: string; name: string; price: number; available: number | null; soldOut: boolean }
+interface EventItem { id: string; title: string; description: string; image?: string | null; date?: string | null; location?: string | null; ticketTypes: EventTicketType[] }
+
 interface StoreItem {
   id: string
   title: string
@@ -38,6 +41,10 @@ export default function StorePage() {
   const [loading, setLoading] = useState(true)
   const cartCount = useCartCount()
 
+  // Events/tickets
+  const [events, setEvents] = useState<EventItem[]>([])
+  const [eventsLoading, setEventsLoading] = useState(true)
+
   // Quick-add modal
   const [quickItem, setQuickItem] = useState<StoreItem | null>(null)
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({})
@@ -48,6 +55,11 @@ export default function StorePage() {
       .then(r => r.json())
       .then(d => { setItems(d.items ?? []); setCategories(d.categories ?? []); setLoading(false) })
       .catch(() => setLoading(false))
+
+    fetch('/api/entradas/list')
+      .then(r => r.json())
+      .then(d => { setEvents(d.events ?? []); setEventsLoading(false) })
+      .catch(() => setEventsLoading(false))
   }, [])
 
   const handleCategory = (cat: string) => {
@@ -208,6 +220,62 @@ export default function StorePage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Events / Entradas section */}
+      {(eventsLoading || events.length > 0) && (
+        <div style={{ marginTop: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+            <h2 style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.12em' }}>🎟 Entradas</h2>
+            <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(210,3,221,0.4), transparent)' }} />
+          </div>
+          {eventsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+              <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#D203DD', borderTopColor: 'transparent' }} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {events.map(ev => {
+                const allSoldOut = ev.ticketTypes.every(t => t.soldOut)
+                const formatDate = (d: string) => new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+                return (
+                  <Link key={ev.id} href={`/entradas/${ev.id}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                    <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid rgba(210,3,221,0.2)', background: 'rgba(210,3,221,0.04)', transition: 'border-color 0.2s', opacity: allSoldOut ? 0.6 : 1, display: 'flex', flexDirection: 'column' }}>
+                      {ev.image && (
+                        <div style={{ aspectRatio: '16/7', overflow: 'hidden' }}>
+                          <img src={ev.image} alt={ev.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                      )}
+                      <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div>
+                          <p style={{ fontWeight: 800, color: '#fff', fontSize: 13, margin: '0 0 4px', lineHeight: 1.3 }}>{ev.title}</p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {ev.date && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>📅 {formatDate(ev.date)}</span>}
+                            {ev.location && <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>📍 {ev.location}</span>}
+                          </div>
+                        </div>
+                        {/* Ticket types */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {ev.ticketTypes.map(tt => (
+                            <div key={tt.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                              <span style={{ fontSize: 11, color: tt.soldOut ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{tt.name}{tt.soldOut ? ' — Agotado' : ''}</span>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: tt.soldOut ? 'rgba(255,255,255,0.2)' : '#F5A623' }}>${tt.price.toFixed(2)} USDT</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: 'auto', paddingTop: 8 }}>
+                          <div style={{ padding: '8px 0', borderRadius: 9, textAlign: 'center', fontSize: 12, fontWeight: 700, background: allSoldOut ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#D203DD,#0D1E79)', color: allSoldOut ? 'rgba(255,255,255,0.3)' : '#fff' }}>
+                            {allSoldOut ? 'Agotado' : '🎟 Comprar entrada'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

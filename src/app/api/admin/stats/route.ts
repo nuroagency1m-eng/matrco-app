@@ -33,10 +33,10 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
       take: 5,
     }),
-    // Total revenue: sum of all approved pack purchases
+    // Total revenue: sum of approved purchases excluding Fase Global (external payment)
     prisma.packPurchaseRequest.aggregate({
       _sum: { price: true },
-      where: { status: 'APPROVED' },
+      where: { status: 'APPROVED', NOT: { paymentMethod: 'FASE_GLOBAL' } },
     }),
     // Total commissions: sum of all clipping payouts issued
     prisma.clippingPayout.aggregate({

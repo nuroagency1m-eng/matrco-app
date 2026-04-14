@@ -641,3 +641,85 @@ export async function sendAdminOtpEmail(
     return false
   }
 }
+
+export async function sendTicketEmail(
+  email: string,
+  customerName: string,
+  ticket: {
+    ticketCode: string
+    eventTitle: string
+    eventDate?: Date | null
+    eventLocation?: string | null
+    eventImage?: string | null
+    quantity: number
+    totalPrice: number
+    paymentMethod: string
+  }
+): Promise<boolean> {
+  const dateStr = ticket.eventDate
+    ? new Date(ticket.eventDate).toLocaleString('es-ES', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
+
+  const content = `
+    <p style="color:#D203DD;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin:0 0 16px;">🎟 Entrada Confirmada</p>
+
+    <h1 style="color:#ffffff;font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-0.3px;line-height:1.3;">
+      ¡Tu entrada está lista!
+    </h1>
+    <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0 0 28px;line-height:1.7;">
+      Hola <strong style="color:rgba(255,255,255,0.7);">${customerName}</strong>, tu entrada ha sido confirmada. Muestra este código en la puerta del evento.
+    </p>
+
+    ${ticket.eventImage ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="border-radius:14px;overflow:hidden;">
+          <img src="${ticket.eventImage}" alt="${ticket.eventTitle}" width="100%" style="border-radius:14px;display:block;max-height:220px;object-fit:cover;" />
+        </td>
+      </tr>
+    </table>` : ''}
+
+    <!-- Ticket code block -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="background:linear-gradient(135deg,rgba(210,3,221,0.12),rgba(13,30,121,0.18));border:2px solid rgba(210,3,221,0.35);border-radius:16px;padding:24px 20px;text-align:center;">
+          <p style="color:rgba(255,255,255,0.35);font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin:0 0 12px;">Código de entrada</p>
+          <p style="color:#ffffff;font-size:32px;font-weight:900;letter-spacing:8px;margin:0;font-family:'Courier New',Courier,monospace;">${ticket.ticketCode}</p>
+          <p style="color:rgba(255,255,255,0.25);font-size:10px;margin:12px 0 0;">Presenta este código en la entrada del evento</p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Event info -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+      <tr>
+        <td style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px 20px;">
+          <p style="color:rgba(255,255,255,0.25);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 10px;">Detalle del evento</p>
+          <p style="color:#ffffff;font-size:15px;font-weight:800;margin:0 0 8px;">${ticket.eventTitle}</p>
+          ${dateStr ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">📅 ${dateStr}</p>` : ''}
+          ${ticket.eventLocation ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">📍 ${ticket.eventLocation}</p>` : ''}
+          <p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 4px;">🎟 ${ticket.quantity} entrada${ticket.quantity > 1 ? 's' : ''}</p>
+          <p style="color:#F5A623;font-size:13px;font-weight:700;margin:8px 0 0;">Total: $${ticket.totalPrice.toFixed(2)} USDT</p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;margin:0;">
+      Este código es de uso único. No lo compartas. Solo es válido una vez en la entrada.
+    </p>
+  `
+
+  try {
+    await transporter.sendMail({
+      from: `"MY DIAMOND" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: `🎟 Tu entrada: ${ticket.ticketCode} — ${ticket.eventTitle}`,
+      html: emailWrapper(content, '#D203DD'),
+    })
+    console.log(`[EMAIL] Ticket sent to ${email} (${ticket.ticketCode})`)
+    return true
+  } catch (err) {
+    console.error('[EMAIL] Ticket email error:', err)
+    return false
+  }
+}

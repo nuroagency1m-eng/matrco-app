@@ -28,11 +28,7 @@ export async function POST(request: NextRequest) {
   if (!allowedTypes.includes(file.type)) {
     return NextResponse.json({ error: 'Formato no permitido. Usa JPG, PNG o WebP' }, { status: 400 })
   }
-  if (file.size > 5 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Imagen demasiado grande. Máximo 5MB' }, { status: 400 })
-  }
-
-  // 4. Subir a Supabase Storage
+// 4. Subir a Supabase Storage
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'

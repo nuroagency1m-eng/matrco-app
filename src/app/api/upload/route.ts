@@ -4,9 +4,6 @@ import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getAuthUser } from '@/lib/auth'
 
-const IMAGE_MAX_BYTES = 5 * 1024 * 1024    // 5 MB
-const VIDEO_MAX_BYTES = 150 * 1024 * 1024  // 150 MB
-const AUDIO_MAX_BYTES = 300 * 1024 * 1024  // 300 MB
 
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -40,16 +37,6 @@ export async function POST(request: Request) {
 
     const isVideo = file.type.startsWith('video/')
     const isAudio = file.type.startsWith('audio/')
-
-    if (isAudio && file.size > AUDIO_MAX_BYTES) {
-      return NextResponse.json({ error: 'El audio es demasiado pesado. Máximo 300MB.' }, { status: 400 })
-    }
-    if (isVideo && file.size > VIDEO_MAX_BYTES) {
-      return NextResponse.json({ error: 'El video es demasiado pesado. Máximo 150MB.' }, { status: 400 })
-    }
-    if (!isVideo && !isAudio && file.size > IMAGE_MAX_BYTES) {
-      return NextResponse.json({ error: 'La imagen es demasiado pesada. Máximo 5MB.' }, { status: 400 })
-    }
 
     const fileName = `${user.id}/${randomUUID()}.${ext}`
     const bytes = await file.arrayBuffer()

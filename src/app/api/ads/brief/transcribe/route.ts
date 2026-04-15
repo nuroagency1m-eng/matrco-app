@@ -23,11 +23,6 @@ export async function POST(req: Request) {
     const file = formData.get('audio') as File | null
     if (!file) return NextResponse.json({ error: 'No se recibió audio' }, { status: 400 })
 
-    const maxSize = 25 * 1024 * 1024 // 25MB (OpenAI Whisper limit)
-    if (file.size > maxSize) {
-        return NextResponse.json({ error: 'El audio supera el límite de 25MB' }, { status: 400 })
-    }
-
     try {
         const buffer = Buffer.from(await file.arrayBuffer())
         const text = await transcribeAudio(buffer, file.name || 'audio.webm', apiKey)

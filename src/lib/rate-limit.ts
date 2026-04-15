@@ -69,8 +69,8 @@ export function getClientIp(request: Request): string {
 
 /** Configuraciones predefinidas */
 export const RATE_LIMITS = {
-  /** Login: 10 intentos por 15 minutos por IP */
-  login: { windowSec: 15 * 60, max: 10 },
+  /** Login: 20 intentos por 15 minutos por IP */
+  login: { windowSec: 15 * 60, max: 20 },
   /** Register: 5 registros por hora por IP */
   register: { windowSec: 60 * 60, max: 5 },
   /** Device OTP verify: 8 intentos por 15 minutos por IP */

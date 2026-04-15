@@ -17,20 +17,22 @@ function generateCode(): string {
 }
 
 export async function POST(request: NextRequest) {
-  // Rate limit: 10 intentos por IP en 15 minutos
+  // Rate limit: 20 intentos por IP en 15 minutos (se omite si IP no detectada)
   const ip = getClientIp(request)
-  const rl = rateLimit(`login:${ip}`, RATE_LIMITS.login)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.' },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
-          'X-RateLimit-Remaining': '0',
-        },
-      }
-    )
+  if (ip !== 'unknown') {
+    const rl = rateLimit(`login:${ip}`, RATE_LIMITS.login)
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      )
+    }
   }
 
   try {

@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, generateToken } from '@/lib/auth'
-import { rateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/turnstile'
 import { sendDeviceVerificationEmail } from '@/lib/email'
 import { parseUserAgent, getIpGeo } from '@/lib/device-utils'
@@ -17,23 +16,6 @@ function generateCode(): string {
 }
 
 export async function POST(request: NextRequest) {
-  // Rate limit: 20 intentos por IP en 15 minutos (se omite si IP no detectada)
-  const ip = getClientIp(request)
-  if (ip !== 'unknown') {
-    const rl = rateLimit(`login:${ip}`, RATE_LIMITS.login)
-    if (!rl.allowed) {
-      return NextResponse.json(
-        { error: 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.' },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
-            'X-RateLimit-Remaining': '0',
-          },
-        }
-      )
-    }
-  }
 
   try {
     const body = await request.json()

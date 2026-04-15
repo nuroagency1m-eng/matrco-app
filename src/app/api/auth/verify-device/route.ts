@@ -12,13 +12,15 @@ const JWT_SECRET = process.env.JWT_SECRET!
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
 
-  // Rate limit: 8 intentos por IP en 15 minutos
-  const rl = rateLimit(`device-verify:${ip}`, RATE_LIMITS.deviceVerify)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.' },
-      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
-    )
+  // Rate limit: 8 intentos por IP en 15 minutos (se omite si IP no detectada)
+  if (ip !== 'unknown') {
+    const rl = rateLimit(`device-verify:${ip}`, RATE_LIMITS.deviceVerify)
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.' },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      )
+    }
   }
 
   try {

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, generateToken } from '@/lib/auth'
+import { getClientIp } from '@/lib/rate-limit'
 import { verifyTurnstile } from '@/lib/turnstile'
 import { sendDeviceVerificationEmail } from '@/lib/email'
 import { parseUserAgent, getIpGeo } from '@/lib/device-utils'
@@ -16,6 +17,7 @@ function generateCode(): string {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
 
   try {
     const body = await request.json()

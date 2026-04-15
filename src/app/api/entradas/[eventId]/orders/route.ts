@@ -2,15 +2,14 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyBscTransaction } from '@/lib/blockchain'
-import { sendTicketEmail } from '@/lib/email'
+import { sendTicketGroupEmail } from '@/lib/email'
 import { randomUUID } from 'crypto'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function generateTicketCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-  const seg = () => Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-  return `TKT-${seg()}-${seg()}`
+  // 8-digit numeric code: 00000000 – 99999999 (100 million combinations)
+  return Math.floor(Math.random() * 100_000_000).toString().padStart(8, '0')
 }
 
 async function uniqueCode(): Promise<string> {
@@ -138,24 +137,19 @@ export async function POST(
 
     if (!orders) return NextResponse.json({ error: 'No hay suficientes entradas disponibles' }, { status: 409 })
 
-    // Send one email per ticket code if APPROVED (crypto auto-verified)
+    // Send one combined email with all codes if APPROVED (crypto auto-verified)
     if (finalStatus === 'APPROVED') {
-      const emailImage = ticketType.image ?? ticketType.event.image
-      orders.forEach((order, i) =>
-        sendTicketEmail(order.customerEmail, order.customerName, {
-          ticketCode: order.ticketCode,
-          eventTitle: ticketType.event.title,
-          ticketTypeName: ticketType.name,
-          eventDate: ticketType.event.date,
-          eventLocation: ticketType.event.location,
-          eventImage: emailImage,
-          quantity: 1,
-          totalPrice: unitPrice,
-          paymentMethod: pm,
-          ticketNumber: i + 1,
-          totalTickets: qty,
-        }).catch(e => console.error(`[email] ticket ${i + 1}/${qty}:`, e))
-      )
+      sendTicketGroupEmail(
+        orders[0].customerEmail,
+        orders[0].customerName,
+        { title: ticketType.event.title, date: ticketType.event.date, location: ticketType.event.location },
+        orders.map(o => ({
+          ticketCode: o.ticketCode,
+          typeName: ticketType.name,
+          typeImage: ticketType.image ?? ticketType.event.image,
+        })),
+        totalPrice
+      ).catch(e => console.error('[email] group ticket:', e))
     }
 
     return NextResponse.json({

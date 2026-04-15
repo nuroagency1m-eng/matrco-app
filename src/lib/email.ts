@@ -729,3 +729,104 @@ export async function sendTicketEmail(
     return false
   }
 }
+
+/** Send a single email with ALL tickets from one purchase grouped together */
+export async function sendTicketGroupEmail(
+  email: string,
+  customerName: string,
+  event: {
+    title: string
+    date?: Date | null
+    location?: string | null
+  },
+  tickets: Array<{
+    ticketCode: string
+    typeName: string
+    typeImage?: string | null
+  }>,
+  totalPrice: number
+): Promise<boolean> {
+  const dateStr = event.date
+    ? new Date(event.date).toLocaleString('es-ES', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : null
+
+  const isMulti = tickets.length > 1
+  const ticketsHtml = tickets.map((t, i) => `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:${i < tickets.length - 1 ? '24px' : '0'};">
+      <tr>
+        <td style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;">
+          ${t.typeImage ? `
+          <div style="background:#111;text-align:center;">
+            <img src="${t.typeImage}" alt="${t.typeName}" width="100%" style="display:block;max-height:200px;object-fit:contain;" />
+          </div>` : ''}
+          <div style="padding:20px;">
+            ${isMulti ? `<p style="color:rgba(255,255,255,0.3);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 6px;">Entrada ${i + 1} de ${tickets.length}</p>` : ''}
+            <p style="color:#D203DD;font-size:12px;font-weight:700;margin:0 0 12px;">🏷 ${t.typeName}</p>
+            <div style="background:linear-gradient(135deg,rgba(210,3,221,0.12),rgba(13,30,121,0.18));border:2px solid rgba(210,3,221,0.35);border-radius:12px;padding:18px;text-align:center;">
+              <p style="color:rgba(255,255,255,0.35);font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin:0 0 10px;">Código de entrada</p>
+              <p style="color:#ffffff;font-size:34px;font-weight:900;letter-spacing:10px;margin:0;font-family:'Courier New',Courier,monospace;">${t.ticketCode}</p>
+              <p style="color:rgba(255,255,255,0.25);font-size:10px;margin:10px 0 0;">Presenta este código en la puerta</p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  `).join('')
+
+  const content = `
+    <p style="color:#D203DD;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin:0 0 16px;">🎟 ${isMulti ? `${tickets.length} Entradas Confirmadas` : 'Entrada Confirmada'}</p>
+
+    <h1 style="color:#ffffff;font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-0.3px;line-height:1.3;">
+      ¡${isMulti ? 'Tus entradas están' : 'Tu entrada está'} lista${isMulti ? 's' : ''}!
+    </h1>
+    <p style="color:rgba(255,255,255,0.4);font-size:13px;margin:0 0 24px;line-height:1.7;">
+      Hola <strong style="color:rgba(255,255,255,0.7);">${customerName}</strong>, ${isMulti ? `tus ${tickets.length} entradas han sido confirmadas` : 'tu entrada ha sido confirmada'}. Muestra ${isMulti ? 'cada código' : 'el código'} en la puerta del evento.
+    </p>
+
+    <!-- Event info -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 18px;">
+          <p style="color:rgba(255,255,255,0.25);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Evento</p>
+          <p style="color:#ffffff;font-size:15px;font-weight:800;margin:0 0 6px;">${event.title}</p>
+          ${dateStr ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0 0 3px;">📅 ${dateStr}</p>` : ''}
+          ${event.location ? `<p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0;">📍 ${event.location}</p>` : ''}
+        </td>
+      </tr>
+    </table>
+
+    <!-- All tickets -->
+    ${ticketsHtml}
+
+    <!-- Total -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;margin-bottom:20px;">
+      <tr>
+        <td style="text-align:right;">
+          <p style="color:#F5A623;font-size:14px;font-weight:700;margin:0;">Total pagado: $${totalPrice.toFixed(2)} USDT</p>
+        </td>
+      </tr>
+    </table>
+
+    <p style="color:rgba(255,255,255,0.2);font-size:11px;text-align:center;margin:0;">
+      ${isMulti ? 'Cada código es de uso único e intransferible. Solo es válido una vez en la entrada.' : 'Este código es de uso único. No lo compartas. Solo es válido una vez en la entrada.'}
+    </p>
+  `
+
+  try {
+    const subjectCodes = tickets.length <= 3
+      ? tickets.map(t => t.ticketCode).join(', ')
+      : `${tickets[0].ticketCode} +${tickets.length - 1} más`
+
+    await transporter.sendMail({
+      from: `"MY DIAMOND" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: `🎟 ${isMulti ? `Tus ${tickets.length} entradas` : 'Tu entrada'}: ${subjectCodes} — ${event.title}`,
+      html: emailWrapper(content, '#D203DD'),
+    })
+    console.log(`[EMAIL] Group ticket sent to ${email} (${tickets.length} codes)`)
+    return true
+  } catch (err) {
+    console.error('[EMAIL] Group ticket email error:', err)
+    return false
+  }
+}

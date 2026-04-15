@@ -110,8 +110,9 @@ export default function ValidarPage() {
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === 'Enter' && lookup()}
-            placeholder="TKT-XXXX-XXXX"
-            autoCapitalize="characters"
+            placeholder="00000000"
+            autoCapitalize="none"
+            inputMode="numeric"
             autoComplete="off"
             style={{
               width: '100%', background: 'rgba(255,255,255,0.05)', border: `2px solid ${BORDER[result]}`,

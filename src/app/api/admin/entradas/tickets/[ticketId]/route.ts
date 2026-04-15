@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminUser, unauthorizedAdmin } from '@/lib/admin-auth'
 import { prisma } from '@/lib/prisma'
-import { sendTicketEmail } from '@/lib/email'
+import { sendTicketGroupEmail } from '@/lib/email'
 
 /** PATCH /api/admin/entradas/tickets/[ticketId]
  * body: { action: 'approve' | 'reject' | 'checkin', notes? }
@@ -61,23 +61,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { ticketId: 
         data: { status: 'APPROVED', notes: notes || null },
       })
 
-      // Send one email per ticket code
-      const emailImage = (ticket.ticketType as any)?.image ?? ticket.event.image
-      siblings.forEach((t, i) => {
-        sendTicketEmail(t.customerEmail, t.customerName, {
-          ticketCode: t.ticketCode,
-          eventTitle: ticket.event.title,
-          ticketTypeName: t.ticketTypeName,
-          eventDate: ticket.event.date,
-          eventLocation: ticket.event.location,
-          eventImage: emailImage,
-          quantity: 1,
-          totalPrice: Number(t.totalPrice),
-          paymentMethod: t.paymentMethod,
-          ticketNumber: i + 1,
-          totalTickets: siblings.length,
-        }).catch(e => console.error(`[email] approve ${i + 1}/${siblings.length}:`, e))
-      })
+      // Send one combined email with all codes
+      const typeImage = (ticket.ticketType as any)?.image ?? ticket.event.image
+      const totalPaid = siblings.reduce((sum, s) => sum + Number(s.totalPrice), 0)
+      sendTicketGroupEmail(
+        siblings[0].customerEmail,
+        siblings[0].customerName,
+        { title: ticket.event.title, date: ticket.event.date, location: ticket.event.location },
+        siblings.map(s => ({
+          ticketCode: s.ticketCode,
+          typeName: s.ticketTypeName,
+          typeImage,
+        })),
+        totalPaid
+      ).catch(e => console.error('[email] approve group:', e))
 
       return NextResponse.json({ ok: true, action: 'approve', approvedCount: siblings.length })
     }

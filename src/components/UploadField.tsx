@@ -19,32 +19,8 @@ export function UploadField({ value, onChange, type, placeholder }: UploadFieldP
     ? 'image/jpeg,image/png,image/webp,image/heic'
     : 'video/mp4,video/quicktime,video/3gpp'
 
-  async function getVideoDuration(file: File): Promise<number> {
-    return new Promise(resolve => {
-      const video = document.createElement('video')
-      video.preload = 'metadata'
-      video.onloadedmetadata = () => { URL.revokeObjectURL(video.src); resolve(video.duration) }
-      video.onerror = () => resolve(0)
-      video.src = URL.createObjectURL(file)
-    })
-  }
-
   async function handleFile(file: File) {
     setError('')
-
-    if (!isImage) {
-      const duration = await getVideoDuration(file)
-      if (duration > 90) {
-        setError('El video no puede durar más de 90 segundos')
-        return
-      }
-    }
-
-    if (isImage && file.size > 5 * 1024 * 1024) {
-      setError('La imagen no puede pesar más de 5MB')
-      return
-    }
-
     setLoading(true)
     try {
       const fd = new FormData()
@@ -120,7 +96,7 @@ export function UploadField({ value, onChange, type, placeholder }: UploadFieldP
             ? '⏳ Subiendo...'
             : isImage
               ? `📷 ${placeholder || 'Subir foto'}`
-              : `🎬 ${placeholder || 'Subir video (máx. 90 seg)'}`}
+              : `🎬 ${placeholder || 'Subir video'}`}
         </button>
       )}
 

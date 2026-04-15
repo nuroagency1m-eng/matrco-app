@@ -267,7 +267,7 @@ export default function AdminPodcastsPage() {
                         style={{ width: '100%', padding: '20px 0', borderRadius: 10, border: '1.5px dashed rgba(210,3,221,0.3)', background: 'rgba(210,3,221,0.04)', cursor: uploadingAudio ? 'wait' : 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)' }}>
                         {uploadingAudio
                           ? <><Loader2 size={18} className="animate-spin" style={{ color: '#D203DD' }} /><span style={{ fontSize: 12 }}>Subiendo...</span></>
-                          : <><Music size={18} style={{ color: '#D203DD' }} /><span style={{ fontSize: 13, fontWeight: 700 }}>Subir audio desde computadora</span><span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>MP3, WAV, AAC, M4A · máx 300MB</span></>
+                          : <><Music size={18} style={{ color: '#D203DD' }} /><span style={{ fontSize: 13, fontWeight: 700 }}>Subir audio desde computadora</span><span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>MP3, WAV, AAC, M4A</span></>
                         }
                       </button>
                     )}

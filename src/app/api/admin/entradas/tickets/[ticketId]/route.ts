@@ -45,17 +45,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { ticketId: 
         return NextResponse.json({ error: 'Ya está aprobado' }, { status: 400 })
       }
 
-      // Find all tickets in the same purchase group (including this one)
+      // Find ALL tickets in the same purchase group to send emails for all
       const siblings = ticket.purchaseGroupId
         ? await prisma.ticketOrder.findMany({
-            where: { purchaseGroupId: ticket.purchaseGroupId, status: { not: 'APPROVED' } },
+            where: { purchaseGroupId: ticket.purchaseGroupId },
           })
         : [ticket]
 
-      // Approve all siblings in one transaction
+      // Approve only the ones not yet approved (idempotent)
       await prisma.ticketOrder.updateMany({
         where: {
           id: { in: siblings.map(s => s.id) },
+          status: { not: 'APPROVED' },
         },
         data: { status: 'APPROVED', notes: notes || null },
       })
@@ -82,13 +83,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { ticketId: 
     }
 
     if (action === 'reject') {
-      // Reject all in the group
+      // Only reject tickets that are not yet approved (never undo an already-approved ticket)
       const groupIds = ticket.purchaseGroupId
         ? await prisma.ticketOrder.findMany({
-            where: { purchaseGroupId: ticket.purchaseGroupId },
+            where: { purchaseGroupId: ticket.purchaseGroupId, status: { not: 'APPROVED' } },
             select: { id: true },
           }).then(rows => rows.map(r => r.id))
-        : [ticket.id]
+        : ticket.status !== 'APPROVED' ? [ticket.id] : []
+
+      if (groupIds.length === 0) {
+        return NextResponse.json({ error: 'No se puede rechazar: todos los tickets del grupo ya fueron aprobados' }, { status: 409 })
+      }
 
       await prisma.ticketOrder.updateMany({
         where: { id: { in: groupIds } },

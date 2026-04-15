@@ -719,7 +719,7 @@ export async function sendTicketEmail(
     await transporter.sendMail({
       from: `"MY DIAMOND" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: `🎟 Tu entrada: ${ticket.ticketCode} — ${ticket.eventTitle}`,
+      subject: `🎟 ${isMulti ? `Entrada ${ticket.ticketNumber} de ${ticket.totalTickets}` : 'Tu entrada'}: ${ticket.ticketCode} — ${ticket.eventTitle}`,
       html: emailWrapper(content, '#D203DD'),
     })
     console.log(`[EMAIL] Ticket sent to ${email} (${ticket.ticketCode})`)

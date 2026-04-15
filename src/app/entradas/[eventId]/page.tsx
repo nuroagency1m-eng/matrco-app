@@ -53,7 +53,7 @@ export default function PublicTicketPage() {
   const [error, setError] = useState('')
   const [ticketCodes, setTicketCodes] = useState<string[]>([])
   const [isPending, setIsPending] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<string | null>(null)
 
   const [cryptoEnabled, setCryptoEnabled] = useState(false)
   const [manualEnabled, setManualEnabled] = useState(true)
@@ -403,10 +403,10 @@ export default function PublicTicketPage() {
                     )}
                     <p className="text-2xl font-black tracking-[0.2em] text-white" style={{ fontFamily: 'Courier New, monospace' }}>{code}</p>
                     <button
-                      onClick={() => { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                      onClick={() => { navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(null), 2000) }}
                       className="mt-2 flex items-center gap-1.5 mx-auto text-xs text-white/40 hover:text-white/70 transition-colors"
                     >
-                      <Copy size={12} /> {copied ? '¡Copiado!' : 'Copiar'}
+                      <Copy size={12} /> {copied === code ? '¡Copiado!' : 'Copiar'}
                     </button>
                   </div>
                 ))}

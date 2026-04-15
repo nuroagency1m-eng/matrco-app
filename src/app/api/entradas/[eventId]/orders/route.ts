@@ -96,7 +96,7 @@ export async function POST(
       if (ticketType.capacity != null) {
         const sold = await tx.ticketOrder.aggregate({
           _sum: { quantity: true },
-          where: { ticketTypeId: ticketType.id, status: { not: 'REJECTED' } },
+          where: { ticketTypeId: ticketType.id, status: { in: ['PENDING', 'APPROVED'] } },
         })
         const soldQty = (sold._sum.quantity ?? 0) + qty
         if (soldQty > ticketType.capacity) throw new Error('CAPACITY_EXCEEDED')

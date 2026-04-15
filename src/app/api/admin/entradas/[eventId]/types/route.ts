@@ -16,6 +16,15 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
     if (parsedCapacity !== null && (isNaN(parsedCapacity) || parsedCapacity < 1))
       return NextResponse.json({ error: 'Capacidad debe ser un número positivo' }, { status: 400 })
 
+    const parsedBulkMin = bulkMinQty !== undefined && bulkMinQty !== null && bulkMinQty !== '' ? parseInt(String(bulkMinQty), 10) : null
+    const parsedBulkPct = bulkDiscountPct !== undefined && bulkDiscountPct !== null && bulkDiscountPct !== '' ? Number(bulkDiscountPct) : null
+    if (parsedBulkMin !== null && (isNaN(parsedBulkMin) || parsedBulkMin < 2))
+      return NextResponse.json({ error: 'Mínimo de entradas para descuento debe ser 2 o más' }, { status: 400 })
+    if (parsedBulkPct !== null && (isNaN(parsedBulkPct) || parsedBulkPct <= 0 || parsedBulkPct >= 100))
+      return NextResponse.json({ error: 'Porcentaje de descuento debe estar entre 1 y 99' }, { status: 400 })
+    if ((parsedBulkMin === null) !== (parsedBulkPct === null))
+      return NextResponse.json({ error: 'Debes configurar tanto el mínimo como el porcentaje de descuento' }, { status: 400 })
+
     const tt = await prisma.ticketType.create({
       data: {
         eventId: params.eventId,
@@ -24,8 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
         image: image?.trim() || null,
         price: Number(price),
         capacity: parsedCapacity,
-        bulkMinQty: bulkMinQty ? parseInt(String(bulkMinQty), 10) : null,
-        bulkDiscountPct: bulkDiscountPct ? Number(bulkDiscountPct) : null,
+        bulkMinQty: parsedBulkMin,
+        bulkDiscountPct: parsedBulkPct,
         active: active !== false,
         sortOrder: sortOrder ?? 0,
       },

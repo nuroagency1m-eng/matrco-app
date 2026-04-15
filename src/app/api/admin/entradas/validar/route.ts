@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     if (!code?.trim()) return NextResponse.json({ error: 'Código requerido' }, { status: 400 })
 
     const ticket = await prisma.ticketOrder.findUnique({
-      where: { ticketCode: code.trim().toUpperCase() },
+      where: { ticketCode: code.trim() },
       include: {
         event: { select: { title: true, date: true, location: true } },
         ticketType: { select: { name: true, image: true } },

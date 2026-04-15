@@ -74,17 +74,28 @@ export async function POST(
     let blockNumber: bigint | null = null
 
     if (pm === 'CRYPTO') {
-      const verification = await verifyBscTransaction(txHash.trim(), totalPrice)
-      if (verification.success) {
-        finalStatus = 'APPROVED'
-        blockNumber = verification.blockNumber ? BigInt(verification.blockNumber) : null
+      try {
+        const verification = await verifyBscTransaction(txHash.trim(), totalPrice)
+        if (verification.success) {
+          finalStatus = 'APPROVED'
+          blockNumber = verification.blockNumber ? BigInt(verification.blockNumber) : null
+        }
+      } catch (e) {
+        console.error('[orders] blockchain verify error:', e)
+        // Fail open: if blockchain is unreachable, treat as PENDING for admin review
+        finalStatus = 'PENDING'
       }
     }
 
-    // Generate one unique code per ticket
+    // Generate one unique code per ticket — deduplicate within the batch too
     const codes: string[] = []
-    for (let i = 0; i < qty; i++) {
-      codes.push(await uniqueCode())
+    const seen = new Set<string>()
+    while (codes.length < qty) {
+      const code = await uniqueCode()
+      if (!seen.has(code)) {
+        seen.add(code)
+        codes.push(code)
+      }
     }
 
     // All tickets from this purchase share a purchaseGroupId
@@ -102,7 +113,7 @@ export async function POST(
       }
 
       return Promise.all(
-        codes.map((code) =>
+        codes.map((code, idx) =>
           tx.ticketOrder.create({
             data: {
               eventId: params.eventId,
@@ -117,8 +128,8 @@ export async function POST(
               totalPrice: unitPrice,
               paymentMethod: pm,
               proofUrl: pm === 'MANUAL' ? proofUrl.trim() : null,
-              txHash: pm === 'CRYPTO' && codes.indexOf(code) === 0 ? txHash.trim() : null,
-              blockNumber: pm === 'CRYPTO' && codes.indexOf(code) === 0 ? blockNumber : null,
+              txHash: pm === 'CRYPTO' && idx === 0 ? txHash.trim() : null,
+              blockNumber: pm === 'CRYPTO' && idx === 0 ? blockNumber : null,
               purchaseGroupId,
               status: finalStatus as any,
             },

@@ -52,7 +52,7 @@ export default function ValidarPage() {
   useEffect(() => { inputRef.current?.focus() }, [])
 
   const lookup = async (codeVal?: string) => {
-    const c = (codeVal ?? code).trim().toUpperCase()
+    const c = (codeVal ?? code).trim()
     if (!c) return
     setResult('loading'); setTicket(null); setConfirming(false)
     try {
@@ -108,7 +108,7 @@ export default function ValidarPage() {
           <input
             ref={inputRef}
             value={code}
-            onChange={e => setCode(e.target.value.toUpperCase())}
+            onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
             onKeyDown={e => e.key === 'Enter' && lookup()}
             placeholder="00000000"
             autoCapitalize="none"
@@ -117,7 +117,7 @@ export default function ValidarPage() {
             style={{
               width: '100%', background: 'rgba(255,255,255,0.05)', border: `2px solid ${BORDER[result]}`,
               borderRadius: 16, padding: '18px 20px', color: '#fff', fontSize: 22, fontWeight: 900,
-              fontFamily: 'Courier New, monospace', letterSpacing: 6, textAlign: 'center',
+              fontFamily: 'Courier New, monospace', letterSpacing: 10, textAlign: 'center',
               outline: 'none', transition: 'border-color 0.3s', boxSizing: 'border-box',
             }}
           />

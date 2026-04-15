@@ -7,6 +7,8 @@ import { Loader2, AlertCircle, CheckCircle2, Upload, Copy } from 'lucide-react'
 interface TicketType {
   id: string
   name: string
+  description?: string | null
+  image?: string | null
   price: number
   capacity: number | null
   available: number | null
@@ -202,15 +204,21 @@ export default function PublicTicketPage() {
                     opacity: tt.soldOut ? 0.5 : 1,
                   }}
                 >
+                  {tt.image && selectedType?.id === tt.id && (
+                    <div className="mb-3 -mx-1 -mt-1 rounded-xl overflow-hidden" style={{ maxHeight: 140 }}>
+                      <img src={tt.image} alt={tt.name} className="w-full object-cover" style={{ maxHeight: 140 }} />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-black text-white text-sm">{tt.name}</p>
+                      {tt.description && <p className="text-xs text-white/40 mt-0.5 leading-relaxed">{tt.description}</p>}
                       {tt.available != null && !tt.soldOut && tt.available <= 10 && (
                         <p className="text-xs text-orange-400 mt-0.5">Solo {tt.available} {tt.available === 1 ? 'disponible' : 'disponibles'}</p>
                       )}
                       {tt.soldOut && <p className="text-xs text-red-400 mt-0.5">Agotado</p>}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0 ml-3">
                       <p className="font-black text-white">${tt.price.toFixed(2)}</p>
                       <p className="text-xs text-white/30">USDT</p>
                     </div>

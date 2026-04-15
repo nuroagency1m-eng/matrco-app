@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Loader2, Plus, Pencil, Trash2, Copy, Check, Search, ExternalLink, ChevronDown, ChevronUp, Upload, X } from 'lucide-react'
 
-interface TicketType { id: string; name: string; price: number; capacity: number | null; active: boolean; sortOrder: number }
+interface TicketType { id: string; name: string; description?: string | null; image?: string | null; price: number; capacity: number | null; active: boolean; sortOrder: number }
 interface Event {
   id: string; title: string; description: string; image?: string | null
   date?: string | null; location?: string | null; active: boolean
@@ -18,7 +18,7 @@ interface Ticket {
 }
 
 const EMPTY_EVENT = { title: '', description: '', image: '', date: '', location: '', active: true }
-const EMPTY_TYPE = { name: '', price: '', capacity: '' }
+const EMPTY_TYPE = { name: '', description: '', image: '', price: '', capacity: '' }
 const INPUT = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-purple-500/40'
 const LABEL = 'block text-[11px] text-white/40 mb-1'
 const STATUS_COLORS: Record<string, string> = { PENDING: '#F5A623', APPROVED: '#4ade80', REJECTED: '#f87171' }
@@ -43,6 +43,7 @@ export default function AdminEntradasPage() {
   const [typeForm, setTypeForm] = useState({ ...EMPTY_TYPE })
   const [typeSaving, setTypeSaving] = useState(false)
   const [typeError, setTypeError] = useState('')
+  const [uploadingTypeImg, setUploadingTypeImg] = useState(false)
 
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -124,7 +125,7 @@ export default function AdminEntradasPage() {
   const openCreateType = (eventId: string) => { setTypeModal({ eventId, editing: null }); setTypeForm({ ...EMPTY_TYPE }); setTypeError('') }
   const openEditType = (eventId: string, tt: TicketType) => {
     setTypeModal({ eventId, editing: tt })
-    setTypeForm({ name: tt.name, price: String(tt.price), capacity: tt.capacity != null ? String(tt.capacity) : '' })
+    setTypeForm({ name: tt.name, description: tt.description ?? '', image: tt.image ?? '', price: String(tt.price), capacity: tt.capacity != null ? String(tt.capacity) : '' })
     setTypeError('')
   }
   const saveType = async () => {
@@ -132,7 +133,7 @@ export default function AdminEntradasPage() {
     if (!typeForm.name.trim()) { setTypeError('Nombre requerido'); return }
     if (!typeForm.price || isNaN(Number(typeForm.price)) || Number(typeForm.price) < 0) { setTypeError('Precio inválido'); return }
     setTypeSaving(true); setTypeError('')
-    const body = { name: typeForm.name, price: typeForm.price, capacity: typeForm.capacity || null, active: true }
+    const body = { name: typeForm.name, description: typeForm.description || null, image: typeForm.image || null, price: typeForm.price, capacity: typeForm.capacity || null, active: true }
     const url = typeModal.editing
       ? `/api/admin/entradas/${typeModal.eventId}/types/${typeModal.editing.id}`
       : `/api/admin/entradas/${typeModal.eventId}/types`
@@ -394,8 +395,34 @@ export default function AdminEntradasPage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div><label className={LABEL}>Nombre *</label><input className={INPUT} value={typeForm.name} onChange={e => setTypeForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: VIP, General, Estudiante" /></div>
-              <div><label className={LABEL}>Precio (USDT) *</label><input className={INPUT} type="number" min="0" step="0.01" value={typeForm.price} onChange={e => setTypeForm(f => ({ ...f, price: e.target.value }))} placeholder="25.00" /></div>
-              <div><label className={LABEL}>Capacidad máx. (opcional)</label><input className={INPUT} type="number" min="0" value={typeForm.capacity} onChange={e => setTypeForm(f => ({ ...f, capacity: e.target.value }))} placeholder="Sin límite" /></div>
+              <div><label className={LABEL}>Descripción (opcional)</label><textarea className={INPUT} rows={2} style={{ resize: 'none' }} value={typeForm.description} onChange={e => setTypeForm(f => ({ ...f, description: e.target.value }))} placeholder="Incluye acceso a área VIP, bebida de bienvenida..." /></div>
+              <div>
+                <label className={LABEL}>Imagen del tipo (opcional)</label>
+                {typeForm.image
+                  ? <div style={{ position: 'relative', marginBottom: 6 }}>
+                      <img src={typeForm.image} alt="" style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 10 }} />
+                      <button onClick={() => setTypeForm(f => ({ ...f, image: '' }))} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: 6, background: 'rgba(0,0,0,0.7)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={12} color="#fff" /></button>
+                    </div>
+                  : <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '10px 0', borderRadius: 10, border: '1px dashed rgba(255,255,255,0.15)', cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                      {uploadingTypeImg ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><Upload size={14} /> Subir imagen</>}
+                      <input type="file" accept="image/*" className="hidden" onChange={async e => {
+                        const f = e.target.files?.[0]; if (!f) return
+                        setUploadingTypeImg(true)
+                        try {
+                          const fd = new FormData(); fd.append('file', f)
+                          const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                          const d = await res.json()
+                          if (d.url) setTypeForm(prev => ({ ...prev, image: d.url }))
+                        } catch {} finally { setUploadingTypeImg(false) }
+                        e.target.value = ''
+                      }} />
+                    </label>
+                }
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}><label className={LABEL}>Precio (USDT) *</label><input className={INPUT} type="number" min="0" step="0.01" value={typeForm.price} onChange={e => setTypeForm(f => ({ ...f, price: e.target.value }))} placeholder="25.00" /></div>
+                <div style={{ flex: 1 }}><label className={LABEL}>Capacidad máx.</label><input className={INPUT} type="number" min="1" value={typeForm.capacity} onChange={e => setTypeForm(f => ({ ...f, capacity: e.target.value }))} placeholder="Sin límite" /></div>
+              </div>
             </div>
             {typeError && <p style={{ fontSize: 12, color: '#f87171', marginTop: 10 }}>{typeError}</p>}
             <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>

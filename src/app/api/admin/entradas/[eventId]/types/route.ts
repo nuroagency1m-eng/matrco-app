@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
   const admin = await getAdminUser()
   if (!admin) return unauthorizedAdmin()
   try {
-    const { name, price, capacity, active, sortOrder } = await req.json()
+    const { name, description, image, price, capacity, active, sortOrder } = await req.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 })
     if (!price || isNaN(Number(price)) || Number(price) < 0) return NextResponse.json({ error: 'Precio inválido' }, { status: 400 })
 
@@ -20,6 +20,8 @@ export async function POST(req: NextRequest, { params }: { params: { eventId: st
       data: {
         eventId: params.eventId,
         name: name.trim(),
+        description: description?.trim() || null,
+        image: image?.trim() || null,
         price: Number(price),
         capacity: parsedCapacity,
         active: active !== false,

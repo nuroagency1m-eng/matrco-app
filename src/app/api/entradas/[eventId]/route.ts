@@ -33,6 +33,8 @@ export async function GET(
         return {
           id: tt.id,
           name: tt.name,
+          description: tt.description,
+          image: tt.image,
           price: Number(tt.price),
           capacity: tt.capacity,
           available,

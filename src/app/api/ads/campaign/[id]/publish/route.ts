@@ -148,7 +148,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
                     audienceError = 'Configura tu API Key de OpenAI en Configuración → IA para publicar campañas de Meta con segmentación de audiencia.'
                 } else {
                     const oaiKey = decrypt(oaiConfig.apiKeyEnc, ENC_KEY!)
-                    const keywords = await generateAudienceInterests(campaign.brief, oaiKey, oaiConfig.model || 'gpt-5.1')
+                    const keywords = await generateAudienceInterests(campaign.brief, oaiKey, oaiConfig.model || 'gpt-4o')
                     console.log(`[Publish] AI generated ${keywords.length} interest keywords:`, keywords.join(', '))
 
                     const metaAdapter = adapter as MetaAdapter

@@ -415,7 +415,9 @@ export class MetaAdapter implements IAdsAdapter {
                 if (draft.advantageCreative) {
                     carouselCreativePayload.degrees_of_freedom_spec = {
                         creative_features_spec: {
-                            standard_enhancements: { enroll_status: 'OPT_IN' }
+                            image_enhancement: { enroll_status: 'OPT_IN' },
+                            text_optimizations: { enroll_status: 'OPT_IN' },
+                            adapt_to_placement: { enroll_status: 'OPT_IN' }
                         }
                     }
                 }
@@ -575,7 +577,9 @@ export class MetaAdapter implements IAdsAdapter {
                 if (draft.advantageCreative && !isMessagingAd && !draft.providerPostId) {
                     creativePayload.degrees_of_freedom_spec = {
                         creative_features_spec: {
-                            standard_enhancements: { enroll_status: 'OPT_IN' }
+                            image_enhancement: { enroll_status: 'OPT_IN' },
+                            text_optimizations: { enroll_status: 'OPT_IN' },
+                            adapt_to_placement: { enroll_status: 'OPT_IN' }
                         }
                     }
                 }

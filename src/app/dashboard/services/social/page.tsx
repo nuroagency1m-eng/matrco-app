@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Send, Calendar, History, BarChart2, Zap, Image, Video, Sparkles, Wand2, FileText, Trash2, Plus, Loader2, CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react'
 import AIKeySelector from '@/components/AIKeySelector'
+import { usePlanGuard } from '@/hooks/usePlanGuard'
 
 const NETWORKS = [
     { id: 'FACEBOOK', label: 'Facebook', icon: '📘', color: '#1877F2', supportsText: true, supportsImage: true, supportsVideo: true, supportsStory: true },
@@ -26,6 +27,7 @@ function toBold(text: string): string {
 }
 
 export default function SocialPage() {
+    usePlanGuard()
     const searchParams = useSearchParams()
     const [tab, setTab] = useState<'create' | 'calendar' | 'history' | 'metrics' | 'connections'>('create')
     const [connections, setConnections] = useState<any[]>([])

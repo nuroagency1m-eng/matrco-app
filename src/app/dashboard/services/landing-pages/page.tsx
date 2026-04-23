@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Layout, Plus, Search, ExternalLink, Edit3, Trash2, Users, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { usePlanGuard } from '@/hooks/usePlanGuard'
 
 interface LandingPage {
     id: string
@@ -17,6 +18,7 @@ interface LandingPage {
 }
 
 export default function LandingPagesPage() {
+    usePlanGuard()
     const [pages, setPages] = useState<LandingPage[]>([])
     const [loading, setLoading] = useState(true)
 

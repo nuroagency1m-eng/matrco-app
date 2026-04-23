@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { UploadField } from '@/components/UploadField'
 import AIKeySelector from '@/components/AIKeySelector'
+import { usePlanGuard } from '@/hooks/usePlanGuard'
 import {
   ArrowLeft,
   Plus,
@@ -3189,6 +3190,7 @@ function BotDetailView({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function WhatsAppPage() {
+  usePlanGuard()
   const [bots, setBots] = useState<Bot[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedBot, setSelectedBot] = useState<Bot | null>(null)

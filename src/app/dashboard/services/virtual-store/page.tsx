@@ -23,6 +23,7 @@ import {
     Check,
 } from 'lucide-react'
 import Link from 'next/link'
+import { usePlanGuard } from '@/hooks/usePlanGuard'
 
 interface Product {
     id: string
@@ -131,6 +132,7 @@ function ShareStoreModal({ store, onClose }: { store: StoreRecord; onClose: () =
 }
 
 export default function VirtualStorePage() {
+    usePlanGuard()
     const [stores, setStores] = useState<StoreRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [view, setView] = useState<'STORES' | 'PRODUCTS'>('STORES')

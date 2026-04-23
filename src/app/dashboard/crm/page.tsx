@@ -8,6 +8,7 @@ import {
     Loader2, MessageSquare, AlertCircle,
     Download, Wifi, RotateCcw, Smartphone
 } from 'lucide-react'
+import { usePlanGuard } from '@/hooks/usePlanGuard'
 
 const STATUS_COLORS: Record<string, string> = {
     DRAFT: 'text-white/40 bg-white/5',
@@ -27,6 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export default function CrmPage() {
+    usePlanGuard()
     const router = useRouter()
     const [campaigns, setCampaigns] = useState<any[]>([])
     const [loading, setLoading] = useState(true)

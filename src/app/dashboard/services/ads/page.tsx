@@ -11,6 +11,7 @@ import {
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import AIKeySelector from '@/components/AIKeySelector'
+import { usePlanGuard } from '@/hooks/usePlanGuard'
 
 const PLATFORMS = [
     { id: 'META', label: 'Meta Ads', sub: 'Facebook & Instagram', color: '#0081FB', letter: 'f', textColor: 'text-blue-400', glow: 'rgba(0,129,251,0.15)', comingSoon: false },
@@ -28,6 +29,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string; dot: string;
 }
 
 export default function AdsDashboard() {
+    usePlanGuard()
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen">

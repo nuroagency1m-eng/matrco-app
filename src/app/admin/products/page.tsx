@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { RefreshCw, Loader2, Trash2, Edit2, X, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { RefreshCw, Loader2, Trash2, Edit2, X, Search, ChevronLeft, ChevronRight, Play, Image as ImageIcon } from 'lucide-react'
 
 interface Product {
   id: string
@@ -20,6 +20,12 @@ interface Product {
   coverage: string | null
   active: boolean
   createdAt: string
+  imageMainUrls: string[]
+  imagePriceUnitUrl: string | null
+  imagePricePromoUrl: string | null
+  imagePriceSuperUrl: string | null
+  productVideoUrls: string[]
+  testimonialsVideoUrls: string[]
   user: { id: string; username: string; fullName: string }
   bots: { bot: { id: string; name: string } }[]
 }
@@ -185,42 +191,90 @@ export default function AdminProductsPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {products.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 13 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>{p.name}</span>
-                  {p.category && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: 5 }}>{p.category}</span>}
-                  <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, border: '1px solid', ...(p.active ? { color: '#00FF88', borderColor: 'rgba(0,255,136,0.2)', background: 'rgba(0,255,136,0.06)' } : { color: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.08)', background: 'transparent' }) }}>
-                    {p.active ? 'Activo' : 'Inactivo'}
-                  </span>
+            <div key={p.id} style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 13 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>{p.name}</span>
+                    {p.category && <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.05)', padding: '2px 7px', borderRadius: 5 }}>{p.category}</span>}
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 5, border: '1px solid', ...(p.active ? { color: '#00FF88', borderColor: 'rgba(0,255,136,0.2)', background: 'rgba(0,255,136,0.06)' } : { color: 'rgba(255,255,255,0.25)', borderColor: 'rgba(255,255,255,0.08)', background: 'transparent' }) }}>
+                      {p.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>
+                    Usuario: <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{p.user.fullName}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.25)' }}> · @{p.user.username}</span>
+                  </p>
+                  {p.bots.length > 0 && (
+                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+                      Bots: {p.bots.map(b => b.bot.name).join(', ')}
+                    </p>
+                  )}
+                  {(p.priceUnit != null || p.pricePromo2 != null || p.priceSuper6 != null) && (
+                    <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
+                      {[
+                        p.priceUnit != null && `Unit: ${p.priceUnit} ${p.currency}`,
+                        p.pricePromo2 != null && `2x: ${p.pricePromo2} ${p.currency}`,
+                        p.priceSuper6 != null && `6x: ${p.priceSuper6} ${p.currency}`,
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                 </div>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>
-                  Usuario: <span style={{ color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>{p.user.fullName}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.25)' }}> · @{p.user.username}</span>
-                </p>
-                {p.bots.length > 0 && (
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
-                    Bots: {p.bots.map(b => b.bot.name).join(', ')}
-                  </p>
-                )}
-                {(p.priceUnit != null || p.pricePromo2 != null || p.priceSuper6 != null) && (
-                  <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 3 }}>
-                    {[
-                      p.priceUnit != null && `Unit: ${p.priceUnit} ${p.currency}`,
-                      p.pricePromo2 != null && `2x: ${p.pricePromo2} ${p.currency}`,
-                      p.priceSuper6 != null && `6x: ${p.priceSuper6} ${p.currency}`,
-                    ].filter(Boolean).join(' · ')}
-                  </p>
-                )}
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => openEdit(p)} style={{ padding: '6px 8px', borderRadius: 7, background: 'rgba(210,3,221,0.07)', border: '1px solid rgba(210,3,221,0.15)', cursor: 'pointer', color: '#D203DD' }}>
+                    <Edit2 size={13} />
+                  </button>
+                  <button onClick={() => setDeleteConfirm(p)} style={{ padding: '6px 8px', borderRadius: 7, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#ef4444' }}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <button onClick={() => openEdit(p)} style={{ padding: '6px 8px', borderRadius: 7, background: 'rgba(210,3,221,0.07)', border: '1px solid rgba(210,3,221,0.15)', cursor: 'pointer', color: '#D203DD' }}>
-                  <Edit2 size={13} />
-                </button>
-                <button onClick={() => setDeleteConfirm(p)} style={{ padding: '6px 8px', borderRadius: 7, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', color: '#ef4444' }}>
-                  <Trash2 size={13} />
-                </button>
-              </div>
+
+              {/* Media: images + videos */}
+              {(() => {
+                const allImages = [
+                  ...(p.imageMainUrls ?? []),
+                  ...(p.imagePriceUnitUrl ? [p.imagePriceUnitUrl] : []),
+                  ...(p.imagePricePromoUrl ? [p.imagePricePromoUrl] : []),
+                  ...(p.imagePriceSuperUrl ? [p.imagePriceSuperUrl] : []),
+                ]
+                const allVideos = [
+                  ...(p.productVideoUrls ?? []),
+                  ...(p.testimonialsVideoUrls ?? []),
+                ]
+                if (allImages.length === 0 && allVideos.length === 0) return null
+                return (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                    {allImages.slice(0, 6).map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noreferrer"
+                        style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0, display: 'block' }}>
+                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </a>
+                    ))}
+                    {allImages.length > 6 && (
+                      <div style={{ width: 52, height: 52, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        <ImageIcon size={13} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', fontWeight: 700 }}>+{allImages.length - 6}</span>
+                      </div>
+                    )}
+                    {allVideos.slice(0, 4).map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noreferrer"
+                        style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,200,255,0.2)', flexShrink: 0, position: 'relative', display: 'block', background: '#000' }}>
+                        <video src={url} muted style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }} />
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Play size={16} style={{ color: '#fff', filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.8))' }} />
+                        </div>
+                      </a>
+                    ))}
+                    {allVideos.length > 4 && (
+                      <div style={{ width: 52, height: 52, borderRadius: 8, background: 'rgba(0,200,255,0.05)', border: '1px solid rgba(0,200,255,0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        <Play size={13} style={{ color: 'rgba(0,200,255,0.6)' }} />
+                        <span style={{ fontSize: 10, color: 'rgba(0,200,255,0.5)', fontWeight: 700 }}>+{allVideos.length - 4}</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           ))}
         </div>

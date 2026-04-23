@@ -64,14 +64,14 @@ export async function PATCH(
         WHERE id = ${params.id}::uuid
       `
     } else {
-      // Asignar plan: activar + mínimo 15 días (respeta mayor fecha si ya tiene más)
+      // Asignar plan: activar + mínimo 30 días (respeta mayor fecha si ya tiene más)
       await prisma.$executeRaw`
         UPDATE users
         SET plan = ${plan}::"UserPlan",
             is_active = true,
             plan_expires_at = GREATEST(
               COALESCE(plan_expires_at, NOW()),
-              NOW() + INTERVAL '15 days'
+              NOW() + INTERVAL '30 days'
             )
         WHERE id = ${params.id}::uuid
       `

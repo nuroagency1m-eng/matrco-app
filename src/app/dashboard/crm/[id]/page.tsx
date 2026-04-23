@@ -6,8 +6,8 @@ import Link from 'next/link'
 import {
     ArrowLeft, Play, Pause, Users, CheckCircle2, XCircle,
     Clock, Loader2, AlertCircle, RefreshCw,
-    Image as ImageIcon, Calendar, Smartphone, Wifi, WifiOff, Film, Mic,
-    Plus, Pencil, Trash2, Phone, X, Square, Save, Copy, Upload
+    Image as ImageIcon, Calendar, Smartphone, Wifi, WifiOff, Film,
+    Plus, Pencil, Trash2, Phone, X, Save, Copy, Upload
 } from 'lucide-react'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -56,23 +56,14 @@ export default function CrmCampaignDetailPage() {
     const [savingContact, setSavingContact] = useState(false)
     const [deletingContactId, setDeletingContactId] = useState<string | null>(null)
 
-    // Audio recording
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-    const audioChunksRef = useRef<Blob[]>([])
-    const [isRecording, setIsRecording] = useState(false)
-    const [recordingSeconds, setRecordingSeconds] = useState(0)
-    const [audioError, setAudioError] = useState<string | null>(null)
-    const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const [uploadingAudio, setUploadingAudio] = useState(false)
 
     // Edit mode (nombre, prompt, delay, scheduledAt)
     const [isEditing, setIsEditing] = useState(false)
     const [editForm, setEditForm] = useState({ name: '', prompt: '', delayValue: '30', delayUnit: 'seconds', scheduledAt: '' })
     const [savingEdit, setSavingEdit] = useState(false)
 
-    // Image / audio management
+    // Image management
     const imageInputRef = useRef<HTMLInputElement>(null)
-    const audioUploadInputRef = useRef<HTMLInputElement>(null)
     const [uploadingImageCount, setUploadingImageCount] = useState(0)
     const [deletingImageId, setDeletingImageId] = useState<string | null>(null)
 
@@ -251,75 +242,6 @@ export default function CrmCampaignDetailPage() {
             else { const data = await res.json(); setError(data.error || 'Error al eliminar') }
         } catch { setError('Error al eliminar archivo') }
         finally { setDeletingImageId(null) }
-    }
-
-    // ── Audio ──
-    async function uploadAudioFromFile(file: File) {
-        setUploadingAudio(true)
-        try {
-            const fd = new FormData()
-            fd.append('file', file)
-            const res = await fetch(`/api/crm/campaigns/${id}/images`, { method: 'POST', body: fd })
-            if (res.ok) fetchCampaign()
-            else { const data = await res.json(); setError(data.error || 'Error al subir audio') }
-        } catch { setError('Error al subir audio') }
-        finally { setUploadingAudio(false) }
-    }
-
-    async function startRecording() {
-        setAudioError(null)
-        if (!navigator.mediaDevices?.getUserMedia) {
-            setAudioError('Grabación no disponible. Usá Chrome/Firefox y asegurate de estar en HTTPS.')
-            return
-        }
-        let stream: MediaStream
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        } catch (err: unknown) {
-            const name = err instanceof Error ? err.name : ''
-            if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-                setAudioError('Permiso denegado. Hacé clic en el ícono 🔒 de la barra del navegador y habilitá el micrófono.')
-            } else if (name === 'NotFoundError') {
-                setAudioError('No se encontró ningún micrófono en este dispositivo.')
-            } else {
-                setAudioError('No se pudo acceder al micrófono: ' + (err instanceof Error ? err.message : String(err)))
-            }
-            return
-        }
-        try {
-            const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                ? 'audio/webm;codecs=opus'
-                : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')
-                    ? 'audio/ogg;codecs=opus'
-                    : 'audio/webm'
-            const recorder = new MediaRecorder(stream, { mimeType })
-            audioChunksRef.current = []
-            recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
-            recorder.onstop = async () => {
-                stream.getTracks().forEach(t => t.stop())
-                const blob = new Blob(audioChunksRef.current, { type: mimeType })
-                const ext = mimeType.includes('ogg') ? 'ogg' : 'webm'
-                const file = new File([blob], `audio-${Date.now()}.${ext}`, { type: mimeType.split(';')[0] })
-                await uploadAudioFromFile(file)
-            }
-            recorder.start(100)
-            mediaRecorderRef.current = recorder
-            setIsRecording(true)
-            setRecordingSeconds(0)
-            recordingTimerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000)
-        } catch (err: unknown) {
-            stream.getTracks().forEach(t => t.stop())
-            setAudioError('Error al iniciar grabación: ' + (err instanceof Error ? err.message : String(err)))
-        }
-    }
-
-    function stopRecording() {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            mediaRecorderRef.current.stop()
-        }
-        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
-        setIsRecording(false)
-        setRecordingSeconds(0)
     }
 
     // ── Duplicate ──
@@ -970,95 +892,6 @@ export default function CrmCampaignDetailPage() {
                                 />
                                 <p className="text-[10px] text-white/20">JPG, PNG, WEBP, GIF · MP4, MOV, WEBM</p>
                             </>
-                        )}
-                    </div>
-
-                    {/* Audios */}
-                    <div className="bg-white/[0.03] border border-white/8 rounded-2xl p-5">
-                        <p className="text-xs font-black uppercase tracking-widest text-white/30 mb-3 flex items-center gap-2">
-                            <Mic size={12} /> Audios — nota de voz {audioFiles.length > 0 && `(${audioFiles.length})`}
-                        </p>
-
-                        {audioFiles.length > 0 && (
-                            <div className="space-y-2 mb-3">
-                                {audioFiles.map((audio: any, i: number) => (
-                                    <div key={audio.id} className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20 group">
-                                        <Mic size={14} className="text-green-400 shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs text-white/60 truncate">{audio.url.split('?')[0].split('/').pop()}</p>
-                                        </div>
-                                        <span className="text-[10px] text-white/30 shrink-0">#{i + 1}</span>
-                                        {canEdit && (
-                                            <button
-                                                onClick={() => deleteImage(audio.id)}
-                                                disabled={deletingImageId === audio.id}
-                                                className="text-white/20 hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 shrink-0 disabled:opacity-40"
-                                            >
-                                                {deletingImageId === audio.id ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {canEdit && (
-                            isRecording ? (
-                                <button
-                                    type="button"
-                                    onClick={stopRecording}
-                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black animate-pulse"
-                                >
-                                    <Square size={12} /> Detener grabación ({recordingSeconds}s)
-                                </button>
-                            ) : uploadingAudio ? (
-                                <div className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 text-white/40 text-xs">
-                                    <Loader2 size={12} className="animate-spin" /> Subiendo audio...
-                                </div>
-                            ) : (
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={startRecording}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-black hover:bg-green-500/20 transition-all"
-                                    >
-                                        <Mic size={12} /> Grabar audio
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => audioUploadInputRef.current?.click()}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-white/15 hover:border-green-500/40 text-white/30 hover:text-green-400 transition-all text-xs font-black"
-                                    >
-                                        <Upload size={12} /> Subir audio
-                                    </button>
-                                </div>
-                            )
-                        )}
-
-                        {canEdit && (
-                            <>
-                                {audioError && (
-                                    <div className="mt-2 flex items-start gap-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px]">
-                                        <AlertCircle size={13} className="shrink-0 mt-0.5" />
-                                        <span>{audioError}</span>
-                                    </div>
-                                )}
-                                <input
-                                    ref={audioUploadInputRef}
-                                    type="file"
-                                    accept="audio/*"
-                                    multiple
-                                    className="hidden"
-                                    onChange={e => {
-                                        Array.from(e.target.files || []).forEach(f => uploadAudioFromFile(f))
-                                        e.target.value = ''
-                                    }}
-                                />
-                            </>
-                        )}
-
-                        {!canEdit && audioFiles.length === 0 && (
-                            <p className="text-xs text-white/25">Sin audios cargados</p>
                         )}
                     </div>
 

@@ -6,7 +6,9 @@
 
 import { prisma } from '@/lib/prisma'
 import { BaileysManager } from '@/lib/baileys-manager'
-import { decrypt } from '@/lib/crypto'
+import { decrypt as decryptAds } from '@/lib/ads/encryption'
+
+const ADS_ENC_KEY = process.env.ADS_ENCRYPTION_KEY || ''
 
 const OPENAI_BASE = 'https://api.openai.com/v1'
 
@@ -61,12 +63,12 @@ REGLAS:
 async function getOpenAIKey(userId: string): Promise<string> {
     const oaiConfig = await (prisma as any).openAIConfig.findUnique({ where: { userId } })
     if (oaiConfig?.isValid && oaiConfig.apiKeyEnc) {
-        try { return decrypt(oaiConfig.apiKeyEnc) } catch {}
+        try { return decryptAds(oaiConfig.apiKeyEnc, ADS_ENC_KEY) } catch {}
     }
     // Fallback: global key from AppSetting
     const setting = await (prisma as any).appSetting.findUnique({ where: { key: 'openai_global_key' } })
     if (setting?.value) {
-        try { return decrypt(setting.value) } catch {}
+        try { return decryptAds(setting.value, ADS_ENC_KEY) } catch {}
     }
     return ''
 }

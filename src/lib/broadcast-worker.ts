@@ -94,10 +94,9 @@ export async function executeBroadcast(campaignId: string) {
     })
 
     const openaiKey = await getOpenAIKey(campaign.userId)
-    if (!openaiKey) {
-        await (prisma as any).broadcastCampaign.update({ where: { id: campaignId }, data: { status: 'FAILED' } })
-        console.error(`[BROADCAST] No hay OpenAI API Key para campaña ${campaignId}`)
-        return
+    const useAI = !!openaiKey
+    if (!useAI) {
+        console.warn(`[BROADCAST] Sin OpenAI API Key — campaña ${campaignId} enviará el prompt como mensaje fijo`)
     }
 
     // Auto-reconnect Baileys si hay sesión en disco pero no en memoria
@@ -148,11 +147,13 @@ export async function executeBroadcast(campaignId: string) {
                 continue
             }
 
-            const generated = await generateUniqueMessage(
-                campaign.prompt, openaiKey,
-                campaign.bot?.systemPromptTemplate,
-                campaign.messageExample,
-            )
+            const generated = useAI
+                ? await generateUniqueMessage(
+                    campaign.prompt, openaiKey,
+                    campaign.bot?.systemPromptTemplate,
+                    campaign.messageExample,
+                )
+                : (campaign.messageExample?.trim() || campaign.prompt || '')
 
             const nextIndex = images.length > 0 ? (imageIndex + 1) % images.length : 0
             let logImageUrl: string | null = null

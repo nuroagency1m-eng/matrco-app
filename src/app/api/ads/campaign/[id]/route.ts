@@ -68,7 +68,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         where: { id: params.id },
         data: {
             ...(name !== undefined && { name: name.trim() }),
-            ...(dailyBudgetUSD !== undefined && { dailyBudgetUSD: parseFloat(dailyBudgetUSD) }),
+            ...(dailyBudgetUSD !== undefined && { dailyBudgetUSD: Math.max(0, parseFloat(dailyBudgetUSD) || 0) }),
             ...(locations !== undefined && { locations }),
             ...(connectedAccountId !== null && { connectedAccountId }),
             ...(pageId !== undefined && { pageId: pageId || null }),
